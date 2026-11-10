@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { desc } from "drizzle-orm";
-import { db, users, briefs, inquiries, registrations } from "@/src/db";
+import { db, users, briefs, inquiries, registrations, helpLogs } from "@/src/db";
 import { requireAdmin, ROLE_LABEL } from "@/src/lib/auth";
 import { adminSetBriefStatus, adminSetRole, adminToggleInquiry, adminToggleSuspend } from "@/app/actions/admin";
 import { STATUS_CHIP, pretty } from "@/src/lib/constants";
@@ -12,11 +12,12 @@ const fmt = (d: Date) => d.toLocaleDateString("en-CA", { month: "short", day: "n
 
 export default async function Admin() {
   const me = await requireAdmin();
-  const [allUsers, allBriefs, allInq, allReg] = await Promise.all([
+  const [allUsers, allBriefs, allInq, allReg, helps] = await Promise.all([
     db.query.users.findMany({ orderBy: desc(users.createdAt), limit: 200, columns: { passwordHash: false } }),
     db.query.briefs.findMany({ orderBy: desc(briefs.createdAt), limit: 200, with: { owner: { columns: { name: true, organisation: true } }, interests: { columns: { id: true } } } }),
     db.query.inquiries.findMany({ orderBy: desc(inquiries.createdAt), limit: 200 }),
     db.query.registrations.findMany({ orderBy: desc(registrations.createdAt), limit: 500 }),
+    db.query.helpLogs.findMany({ orderBy: desc(helpLogs.createdAt), limit: 100 }),
   ]);
   const pending = allBriefs.filter((b) => b.status === "PENDING");
 
@@ -24,7 +25,7 @@ export default async function Admin() {
     <div className="page wrap stack" style={{ gap: 22 }}>
       <div className="page-head">
         <div><p className="eyebrow o">Administrator</p><h1>Admin console</h1><p>Review briefs, manage members and roles, and follow up on messages and Open House registrations.</p></div>
-        <nav className="row"><a className="chip" href="#briefs">Briefs ({pending.length} pending)</a><a className="chip" href="#users">Members ({allUsers.length})</a><a className="chip" href="#inbox">Inbox ({allInq.filter((q) => !q.handled).length})</a><a className="chip" href="#openhouse">Open House ({allReg.length})</a></nav>
+        <nav className="row"><a className="chip" href="#briefs">Briefs ({pending.length} pending)</a><a className="chip" href="#users">Members ({allUsers.length})</a><a className="chip" href="#inbox">Inbox ({allInq.filter((q) => !q.handled).length})</a><a className="chip" href="#openhouse">Open House ({allReg.length})</a><a className="chip" href="#help">Help questions ({helps.length})</a></nav>
       </div>
 
       <section className="card stack" id="briefs">
@@ -104,6 +105,22 @@ export default async function Admin() {
               <tr key={r.id}><td><b>{r.name}</b><div className="dim" style={{ fontSize: 13 }}>{r.email}</div></td><td>{r.attendAs}</td><td>{r.organisation ?? ""}</td><td style={{ maxWidth: 280 }}>{r.note ?? ""}</td><td>{fmt(r.createdAt)}</td></tr>
             ))}</tbody>
           </table></div>
+        )}
+      </section>
+
+      <section className="card stack" id="help">
+        <h2>Help questions</h2>
+        <p className="muted" style={{ fontSize: 14.5 }}>The latest 100 questions asked to the help assistant. Repeated questions are a good sign the site needs clearer wording.</p>
+        {helps.length === 0 ? <p className="empty">No questions yet.</p> : (
+          <div className="list">{helps.map((q) => (
+            <details key={q.id} className="item">
+              <summary style={{ cursor: "pointer" }}>
+                <span style={{ fontWeight: 600 }}>{q.question}</span>
+                <span className="dim" style={{ fontSize: 13, marginLeft: 8 }}>{(q.role ?? "GUEST").toLowerCase()} · {q.page ?? ""} · {fmt(q.createdAt)}{q.source !== "ai" ? ` · ${q.source}` : ""}</span>
+              </summary>
+              <p className="muted" style={{ whiteSpace: "pre-wrap", fontSize: 14, marginTop: 10 }}>{q.answer}</p>
+            </details>
+          ))}</div>
         )}
       </section>
     </div>

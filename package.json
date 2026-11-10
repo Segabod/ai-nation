@@ -11,6 +11,7 @@
     "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
+    "ai": "7.0.169",
     "bcryptjs": "3.0.3",
     "drizzle-orm": "0.45.4",
     "next": "15.5.29",

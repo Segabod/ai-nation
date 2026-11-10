@@ -3,6 +3,7 @@ import "./globals.css";
 import { getCurrentUser } from "@/src/lib/auth";
 import Nav from "@/src/components/Nav";
 import Footer from "@/src/components/Footer";
+import HelpBot from "@/src/components/HelpBot";
 
 export const metadata: Metadata = {
   title: { default: "AI Nation | People. Skills. Opportunity.", template: "%s | AI Nation" },
@@ -27,6 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Nav user={user ? { name: user.name, role: user.role } : null} />
         <main id="main">{children}</main>
         <Footer />
+        <HelpBot user={user ? { name: user.name, role: user.role } : null} />
       </body>
     </html>
   );

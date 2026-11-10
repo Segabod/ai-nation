@@ -21,6 +21,13 @@ Built with Next.js 15 (App Router, server actions), PostgreSQL and Drizzle ORM. 
 - Middleware bounces anonymous visitors from private areas; `?next=` return path is validated against open redirects
 - Security headers (frame denial, nosniff, referrer policy), honeypot spam traps on public forms, CSV formula-injection protection
 
+**Help assistant ("Nation Guide")**
+- Chat bubble on every page that answers questions about using AI Nation, links people to the right page, knows which briefs are open and who is asking
+- Runs on Claude Haiku 5.5 through Vercel AI Gateway (authenticated automatically on Vercel; set `AI_GATEWAY_API_KEY` to run it locally, or `HELP_MODEL` to change model)
+- Falls back to a built-in FAQ if the model is unavailable, so help never goes dark
+- Rate limited (25 questions per 10 minutes per person); every question is logged in Admin console → Help questions
+- Edit what it knows in `src/lib/help.ts`
+
 **Role workspaces**
 | Role | Can do |
 |---|---|

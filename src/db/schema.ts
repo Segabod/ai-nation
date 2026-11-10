@@ -131,3 +131,15 @@ export const communitiesRelations = relations(communities, ({ one }) => ({
 
 export type User = typeof users.$inferSelect;
 export type Role = User["role"];
+
+/** Questions asked to the help assistant, so admins can see what people need. */
+export const helpLogs = pgTable("help_logs", {
+  id: id(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  role: text("role"),
+  page: text("page"),
+  question: text("question").notNull(),
+  answer: text("answer"),
+  source: text("source").notNull().default("ai"),
+  createdAt: created(),
+}, (t) => [index("help_logs_created_idx").on(t.createdAt)]);
