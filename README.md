@@ -46,7 +46,7 @@ Demo accounts (password `DemoPass2026`): `org@demo.aination`, `builder@demo.aina
 
 1. The brand photos (`lights.jpg`, `neon.jpg`, `chips.jpg`, `event.jpg`) sit at the repo root and are copied into `public/` at build time by `scripts/copy-assets.mjs`.
 2. In the Vercel project, add a Postgres database (Storage → Neon), which sets `DATABASE_URL`. Add `DIRECT_URL` (the unpooled URL), `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
-3. From your machine, with those env vars set: `npm run db:push && npm run db:seed`.
+3. Nothing to run by hand: every build applies pending migrations from `drizzle/` and creates the admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD` if that account does not exist yet (`scripts/migrate.mjs`).
 4. Push to `main`. Vercel builds with `next build`.
 
 ## Project layout
