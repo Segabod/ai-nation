@@ -10,7 +10,9 @@ import { hitRateLimit } from "@/src/lib/ratelimit";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const MODEL = process.env.HELP_MODEL || "anthropic/claude-haiku-5.5";
+// Tried in order; the first model the gateway accepts answers. Override with HELP_MODELS="a,b,c".
+const MODELS = (process.env.HELP_MODELS || process.env.HELP_MODEL || "anthropic/claude-haiku-5.5,anthropic/claude-haiku-4.5,google/gemini-2.5-flash-lite")
+  .split(",").map((m) => m.trim()).filter(Boolean);
 
 const bodySchema = z.object({
   messages: z
@@ -89,45 +91,52 @@ ${briefList}`;
     return textResponse(answer, "faq");
   };
 
-  try {
-    let streamError: unknown = null;
-    const result = streamText({
-      model: MODEL,
-      instructions,
-      messages: body.messages,
-      maxOutputTokens: 600,
-      temperature: 0.3,
-      abortSignal: req.signal,
-      onError: ({ error }) => { streamError = error; },
-    });
+  const errors: string[] = [];
+  for (const model of MODELS) {
+    try {
+      let streamError: unknown = null;
+      const result = streamText({
+        model,
+        instructions,
+        messages: body.messages,
+        maxOutputTokens: 600,
+        temperature: 0.3,
+        abortSignal: req.signal,
+        onError: ({ error }) => { streamError = error; },
+      });
 
-    // Pull the first chunk before responding so a gateway failure falls back cleanly.
-    const it = result.textStream[Symbol.asyncIterator]();
-    const first = await it.next();
-    // streamText reports failures through onError and simply ends the stream, so treat "nothing came back" as a failure
-    if (first.done || !first.value) return fallback(streamError ?? "empty response");
-    let full = first.value;
+      // Pull the first chunk before responding: streamText reports failures through onError
+      // and simply ends the stream, so "nothing came back" means try the next model.
+      const it = result.textStream[Symbol.asyncIterator]();
+      const first = await it.next();
+      if (first.done || !first.value) {
+        errors.push(`${model}: ${(streamError as Error)?.message ?? "empty response"}`);
+        continue;
+      }
+      let full = first.value;
 
-    const enc = new TextEncoder();
-    const stream = new ReadableStream<Uint8Array>({
-      async start(controller) {
-        if (full) controller.enqueue(enc.encode(full));
-        try {
-          for (let r = await it.next(); !r.done; r = await it.next()) {
-            full += r.value;
-            controller.enqueue(enc.encode(r.value));
+      const enc = new TextEncoder();
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          controller.enqueue(enc.encode(full));
+          try {
+            for (let r = await it.next(); !r.done; r = await it.next()) {
+              full += r.value;
+              controller.enqueue(enc.encode(r.value));
+            }
+          } catch {
+            const tail = "\n\nSorry, I lost my train of thought. You can also reach the team through [Contact](/contact).";
+            full += tail;
+            controller.enqueue(enc.encode(tail));
           }
-        } catch {
-          const tail = "\n\nSorry, I lost my train of thought. You can also reach the team through [Contact](/contact).";
-          full += tail;
-          controller.enqueue(enc.encode(tail));
-        }
-        controller.close();
-        await log(full, "ai");
-      },
-    });
-    return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Help-Source": "ai", "Cache-Control": "no-store" } });
-  } catch (err) {
-    return fallback(err);
+          controller.close();
+          await log(full, model);
+        },
+      });
+      return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Help-Source": model, "Cache-Control": "no-store" } });
+    } catch (err) {
+      errors.push(`${model}: ${(err as Error)?.message}`);
+    }
   }
+  return fallback(errors.join(" | "));
 }

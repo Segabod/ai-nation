@@ -23,7 +23,7 @@ Built with Next.js 15 (App Router, server actions), PostgreSQL and Drizzle ORM. 
 
 **Help assistant ("Nation Guide")**
 - Chat bubble on every page that answers questions about using AI Nation, links people to the right page, knows which briefs are open and who is asking
-- Runs on Claude Haiku 5.5 through Vercel AI Gateway (authenticated automatically on Vercel; set `AI_GATEWAY_API_KEY` to run it locally, or `HELP_MODEL` to change model)
+- Runs through Vercel AI Gateway (authenticated automatically on Vercel; set `AI_GATEWAY_API_KEY` to run it locally). Tries Claude Haiku 5.5, then Claude Haiku 4.5, then Gemini 2.5 Flash Lite; override the order with `HELP_MODELS`
 - Falls back to a built-in FAQ if the model is unavailable, so help never goes dark
 - Rate limited (25 questions per 10 minutes per person); every question is logged in Admin console → Help questions
 - Edit what it knows in `src/lib/help.ts`

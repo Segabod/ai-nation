@@ -116,7 +116,7 @@ export default async function Admin() {
             <details key={q.id} className="item">
               <summary style={{ cursor: "pointer" }}>
                 <span style={{ fontWeight: 600 }}>{q.question}</span>
-                <span className="dim" style={{ fontSize: 13, marginLeft: 8 }}>{(q.role ?? "GUEST").toLowerCase()} · {q.page ?? ""} · {fmt(q.createdAt)}{q.source !== "ai" ? ` · ${q.source}` : ""}</span>
+                <span className="dim" style={{ fontSize: 13, marginLeft: 8 }}>{(q.role ?? "GUEST").toLowerCase()} · {q.page ?? ""} · {fmt(q.createdAt)}{` · ${q.source}`}</span>
               </summary>
               <p className="muted" style={{ whiteSpace: "pre-wrap", fontSize: 14, marginTop: 10 }}>{q.answer}</p>
             </details>
