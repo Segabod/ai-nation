@@ -17,8 +17,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = await getCurrentUser();
   const remembered = (await cookies()).get(AUDIENCE_COOKIE)?.value;
   const audience = audienceForRole(user?.role) ?? (isAudience(remembered) ? remembered : null);
+  const theme = (await cookies()).get("ain_theme")?.value === "light" ? "light" : "dark";
   return (
-    <html lang="en">
+    <html lang="en" data-theme={theme === "light" ? "light" : undefined}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -29,7 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <a className="skip" href="#main">Skip to content</a>
-        <Nav user={user ? { name: user.name, role: user.role } : null} audience={audience} />
+        <Nav user={user ? { name: user.name, role: user.role } : null} audience={audience} theme={theme} />
         <main id="main">{children}</main>
         <Footer />
         <HelpBot user={user ? { name: user.name, role: user.role } : null} />

@@ -3,9 +3,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "./Logo";
+import ThemeToggle from "./ThemeToggle";
 import { AUDIENCES, audienceForPath, type Audience } from "@/src/lib/audience";
 
-type Props = { user: { name: string; role: string } | null; audience: Audience | null };
+type Props = { user: { name: string; role: string } | null; audience: Audience | null; theme: "dark" | "light" };
 
 type L = { href: string; label: string };
 
@@ -49,7 +50,7 @@ function linksFor(aud: Audience | null, role: string | null): L[] {
   }
 }
 
-export default function Nav({ user, audience }: Props) {
+export default function Nav({ user, audience, theme }: Props) {
   const [open, setOpen] = useState(false);
   const path = usePathname();
   // The page you are on wins; otherwise your role, then what you chose last time.
@@ -79,6 +80,7 @@ export default function Nav({ user, audience }: Props) {
           )}
         </nav>
         <div className="nav-cta">
+          <ThemeToggle initial={theme} />
           {user ? (
             <Link href="/dashboard" className="btn btn-light btn-sm">
               Dashboard <span className="ar">↗</span>
