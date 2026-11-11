@@ -58,6 +58,8 @@ export const briefs = pgTable("briefs", {
   engagement: text("engagement").notNull(),
   budget: text("budget"),
   status: briefStatusEnum("status").notNull().default("PENDING"),
+  /** An illustrative brief that shows how briefs work; builders cannot apply to it. */
+  isSample: boolean("is_sample").notNull().default(false),
   createdAt: created(),
 }, (t) => [index("briefs_status_idx").on(t.status)]);
 

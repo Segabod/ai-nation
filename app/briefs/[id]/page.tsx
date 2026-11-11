@@ -33,7 +33,13 @@ export default async function BriefPage({ params }: { params: Promise<{ id: stri
             <span className="chip blue">{b.sector}</span>
             <span className="chip">{b.engagement}</span>
             <span className={`chip ${STATUS_CHIP[b.status]}`}>{pretty(b.status)}</span>
+            {b.isSample && <span className="chip orange">Sample</span>}
           </div>
+          {b.isSample && (
+            <p className="notice info">
+              This is a sample brief. It shows what a real brief on AI Nation looks like; the organisation and budget are illustrative, and it isn’t open for applications.
+            </p>
+          )}
           <h1 style={{ fontSize: "clamp(30px,3.6vw,44px)" }}>{b.title}</h1>
           <p className="dim">{b.owner.organisation ?? "AI Nation partner"}{b.budget ? ` · Budget: ${b.budget}` : ""}</p>
           <div><p className="eyebrow" style={{ marginBottom: 8 }}>The need</p><p style={{ whiteSpace: "pre-wrap" }}>{b.summary}</p></div>
@@ -42,7 +48,27 @@ export default async function BriefPage({ params }: { params: Promise<{ id: stri
         </article>
 
         <aside className="card stack">
-          {isOwner ? (
+          {b.isSample ? (
+            <>
+              <h2>How this brief works</h2>
+              <p className="muted">On a real brief, builders send a short note on why they’re a fit, and the organisation sees it alongside their Skills Passport.</p>
+              <ol className="muted" style={{ paddingLeft: 18, display: "grid", gap: 6, fontSize: 14.5 }}>
+                <li>Builders express interest with a short note.</li>
+                <li>The organisation shortlists from passports and notes.</li>
+                <li>A short call, then the team starts with a named reviewer.</li>
+              </ol>
+              {user?.role === "ORGANISATION" || user?.role === "ADMIN" ? (
+                <Link href={`/briefs/new?sector=${encodeURIComponent(b.sector)}`} className="btn btn-primary">Publish a real brief like this <span className="ar">↗</span></Link>
+              ) : user?.role === "BUILDER" ? (
+                <Link href="/dashboard/passport" className="btn btn-primary">Get my passport ready <span className="ar">↗</span></Link>
+              ) : (
+                <>
+                  <Link href="/signup?role=builder" className="btn btn-primary">Join as a builder <span className="ar">↗</span></Link>
+                  <Link href="/employers" className="linkish">I want to publish a brief →</Link>
+                </>
+              )}
+            </>
+          ) : isOwner ? (
             <>
               <h2>You own this brief</h2>
               <p className="muted">Review interest from builders and manage status from your dashboard.</p>

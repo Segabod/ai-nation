@@ -50,7 +50,7 @@ export default async function BriefsPage({ searchParams }: { searchParams: Promi
         <div className="grid-2">
           {rows.map((b) => (
             <Link key={b.id} href={`/briefs/${b.id}`} className="item">
-              <div className="row"><span className="chip blue">{b.sector}</span><span className="chip">{b.engagement}</span></div>
+              <div className="row"><span className="chip blue">{b.sector}</span><span className="chip">{b.engagement}</span>{b.isSample && <span className="chip orange">Sample</span>}</div>
               <h3>{b.title}</h3>
               <p className="muted" style={{ fontSize: 14.5 }}>{b.summary.length > 180 ? b.summary.slice(0, 180) + "…" : b.summary}</p>
               <p className="dim" style={{ fontSize: 13, marginTop: 10 }}>{b.owner.organisation ?? "AI Nation partner"}{b.budget ? ` · ${b.budget}` : ""}</p>

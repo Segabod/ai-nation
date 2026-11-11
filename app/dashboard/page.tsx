@@ -71,7 +71,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               <div className="list">
                 {open.map((b) => (
                   <Link key={b.id} href={`/briefs/${b.id}`} className="item">
-                    <div className="row"><span className="chip blue">{b.sector}</span>{applied.has(b.id) && <span className="chip ok">Applied</span>}</div>
+                    <div className="row"><span className="chip blue">{b.sector}</span>{b.isSample && <span className="chip orange">Sample</span>}{applied.has(b.id) && <span className="chip ok">Applied</span>}</div>
                     <h3>{b.title}</h3>
                   </Link>
                 ))}

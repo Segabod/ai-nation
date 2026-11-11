@@ -86,6 +86,7 @@ export async function expressInterest(_: FormState, fd: FormData): Promise<FormS
   if (pitch.length > 2000) return { error: "Keep your note under 2,000 characters.", values: values(fd) };
   const brief = await db.query.briefs.findFirst({ where: eq(briefs.id, briefId) });
   if (!brief || brief.status !== "OPEN") return { error: "This brief isn’t accepting interest right now." };
+  if (brief.isSample) return { error: "This is a sample brief, so it isn’t open for applications." };
   const res = await db.insert(interests).values({ briefId, userId: user.id, pitch }).onConflictDoNothing().returning({ id: interests.id });
   if (!res.length) return { error: "You’ve already expressed interest in this brief." };
   revalidatePath(`/briefs/${briefId}`);

@@ -122,7 +122,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
               <div className="grid-3">
                 {openBriefs.map((b) => (
                   <Link key={b.id} href={`/briefs/${b.id}`} className="item">
-                    <span className="chip blue">{b.sector}</span>
+                    <div className="row"><span className="chip blue">{b.sector}</span>{b.isSample && <span className="chip orange">Sample</span>}</div>
                     <h3>{b.title}</h3>
                     <p className="muted" style={{ fontSize: 14 }}>{b.owner.organisation ?? "AI Nation partner"} · {b.engagement}</p>
                   </Link>

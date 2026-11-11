@@ -60,10 +60,10 @@ export async function POST(req: Request) {
   // Live context: what's open right now, and who is asking.
   const open = await db.query.briefs.findMany({
     where: eq(briefs.status, "OPEN"), orderBy: desc(briefs.createdAt), limit: 12,
-    columns: { id: true, title: true, sector: true, engagement: true },
+    columns: { id: true, title: true, sector: true, engagement: true, isSample: true },
   });
   const briefList = open.length
-    ? open.map((b) => `- "${b.title}" (${b.sector}, ${b.engagement}): /briefs/${b.id}`).join("\n")
+    ? open.map((b) => `- "${b.title}" (${b.sector}, ${b.engagement}${b.isSample ? ", SAMPLE brief for illustration, not open for applications" : ""}): /briefs/${b.id}`).join("\n")
     : "No briefs are open right now.";
   const who = user
     ? `The person is signed in as ${user.name.split(" ")[0]}, account type: ${ROLE_LABEL[user.role]}.`
