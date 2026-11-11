@@ -258,7 +258,7 @@ export default async function Home() {
           <p className="muted" style={{ fontSize: 19 }}>Bring your talent. Bring your challenge. Let’s find the right starting point.</p>
           <div className="row">
             <Link href={builderHref} className="btn btn-primary">I’m ready to build <span className="ar">↗</span></Link>
-            <Link href={orgHref} className="btn btn-ghost">I’m looking for talent <span aria-hidden>→</span></Link>
+            <Link href="/employers" className="btn btn-ghost">I’m looking for talent <span aria-hidden>→</span></Link>
             <Link href="/#partner" className="btn btn-ghost">Partner with us</Link>
             <Link href="/contact" className="btn btn-ghost">Send us a message</Link>
           </div>

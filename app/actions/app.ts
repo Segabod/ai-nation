@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db, users, projects, briefs, interests, communities, registrations, inquiries } from "@/src/db";
 import { clientIp, getCurrentUser, requireUser } from "@/src/lib/auth";
 import { hitRateLimit } from "@/src/lib/ratelimit";
-import { SECTORS, ENGAGEMENTS, COMMUNITY_KINDS, ATTEND_AS, TOPICS, PARTNER_TYPES, PARTNER_WAYS } from "@/src/lib/constants";
+import { SECTORS, ENGAGEMENTS, COMMUNITY_KINDS, ATTEND_AS, TOPICS, PARTNER_TYPES, PARTNER_WAYS, EMPLOYER_OPTIONS, EMPLOYER_SIZES } from "@/src/lib/constants";
 import { emailSchema, firstError, list, urlSchema, values, type FormState } from "@/src/lib/forms";
 
 const txt = (min: number, max: number, msg: string) => z.string().trim().min(min, msg).max(max);
@@ -239,6 +239,39 @@ export async function sendPartnership(_: FormState, fd: FormData): Promise<FormS
     d.message || "(No note added.)",
   ].filter((l) => l !== null).join("\n");
   await db.insert(inquiries).values({ name: d.name, email: d.email, topic: "Partnership", message });
+  return { ok: thanks };
+}
+
+/* ---------------- Employers ---------------- */
+
+const employerSchema = z.object({
+  name: txt(2, 100, "Tell us your name."),
+  email: emailSchema,
+  organisation: txt(2, 140, "Tell us which organisation you’re with."),
+  size: z.enum(EMPLOYER_SIZES, { message: "Choose your organisation’s size." }),
+  option: z.enum(EMPLOYER_OPTIONS, { message: "Choose how you’d like to work with builders." }),
+  website: urlSchema.optional(),
+  message: z.string().trim().max(2000, "Keep your note under 2,000 characters.").optional(),
+});
+
+/** Employer enquiries land in the admin inbox under the "I need a team" topic, with the details on top. */
+export async function sendEmployerEnquiry(_: FormState, fd: FormData): Promise<FormState> {
+  const thanks = "Thanks. We’ll reply within two working days to book a 30 minute discovery call.";
+  if (fd.get("company_website")) return { ok: thanks };
+  const p = employerSchema.safeParse(Object.fromEntries(fd));
+  if (!p.success) return { error: firstError(p.error), values: values(fd) };
+  if (await hitRateLimit(`employer:${await clientIp()}`, 5, 60 * 60 * 1000)) {
+    return { error: "We’ve had several requests from your network in the last hour. Please try again later.", values: values(fd) };
+  }
+  const d = p.data;
+  const message = [
+    `Organisation: ${d.organisation} (${d.size})`,
+    `Interested in: ${d.option}`,
+    d.website ? `Website: ${d.website}` : null,
+    "",
+    d.message || "(No note added.)",
+  ].filter((l) => l !== null).join("\n");
+  await db.insert(inquiries).values({ name: d.name, email: d.email, topic: "I need a team", message });
   return { ok: thanks };
 }
 

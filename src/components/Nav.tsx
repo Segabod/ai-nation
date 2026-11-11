@@ -12,6 +12,7 @@ export default function Nav({ user }: Props) {
   const links = [
     { href: "/#paths", label: "Start here" },
     { href: "/briefs", label: "Briefs" },
+    { href: "/employers", label: "Employers" },
     { href: "/#approach", label: "Journey" },
     { href: "/open-house", label: "Open House" },
     { href: "/#partner", label: "Partner" },

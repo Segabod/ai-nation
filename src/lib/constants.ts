@@ -12,6 +12,14 @@ export const PARTNER_TYPES = [
   "Funder or sponsor",
   "Other",
 ] as const;
+export const EMPLOYER_OPTIONS = [
+  "Challenge sponsor",
+  "Sprint brief",
+  "Embedded placement",
+  "Talent pipeline partner",
+  "Not sure yet, let’s talk",
+] as const;
+export const EMPLOYER_SIZES = ["1 to 10 people", "11 to 50 people", "51 to 200 people", "201 to 1,000 people", "More than 1,000 people"] as const;
 export const PARTNER_WAYS = [
   "Send builders our way",
   "Bring problems for builders to solve",

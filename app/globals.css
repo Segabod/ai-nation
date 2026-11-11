@@ -147,6 +147,43 @@ section{position:relative}
 .session .caret{display:inline-block;width:2px;height:1em;background:#0b67c9;vertical-align:-2px;margin-left:2px;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 @media (max-width:900px){.passport{grid-template-columns:1fr}}
+/* for employers */
+.emp-hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding-top:40px}
+.emp-hero h1{font-size:clamp(40px,5.6vw,76px);margin:18px 0 22px}
+.emp-hero .lede{font-size:19px;color:var(--muted);max-width:540px}
+.emp-hero-media{position:relative;border-radius:28px;overflow:hidden;min-height:420px;border:1px solid var(--line);background:var(--panel)}
+.emp-hero-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.emp-hero-media::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(5,11,22,.8))}
+.emp-why{grid-template-columns:repeat(4,1fr)}
+.emp-why .pillar h3{font-size:20px}
+.emp-why .pillar p{font-size:14.5px}
+.emp-options{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.emp-option{display:grid;gap:12px;align-content:start;padding:28px;border-radius:var(--r);border:1px solid var(--line);background:var(--panel)}
+.emp-option.o{background:linear-gradient(160deg,rgba(247,160,30,.08),var(--panel) 55%)}
+.emp-n{font-family:var(--display);font-weight:600;color:var(--blue);font-size:15px;font-variant-numeric:tabular-nums}
+.emp-option.o .emp-n{color:var(--orange)}
+.emp-option h3{font-size:26px}
+.emp-option dl{margin:6px 0 0;display:grid;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
+.emp-option dl div{display:grid;grid-template-columns:110px 1fr;gap:12px}
+.emp-option dt{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding-top:3px}
+.emp-option dd{margin:0;font-size:14.5px}
+.emp-subsidy{display:grid;grid-template-columns:.9fr 1.1fr;gap:40px;align-items:start}
+.emp-subsidy-copy{display:grid;gap:16px;position:sticky;top:110px}
+.emp-subsidy-copy h2{font-size:clamp(30px,3.8vw,48px)}
+.emp-subsidy-cards{display:grid;gap:16px}
+.emp-fund{display:grid;gap:10px;padding:26px;border-radius:var(--r);border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--bg-2))}
+.emp-fund h3{font-size:21px}
+.emp-amount{font-family:var(--display);font-weight:700;font-size:clamp(28px,3.4vw,40px);letter-spacing:-.03em;line-height:1.1}
+.emp-amount small{display:block;font-family:var(--body);font-weight:400;font-size:14px;letter-spacing:0;color:var(--muted);margin-top:4px}
+.emp-note{font-size:13px}
+.emp-promises{list-style:none;margin:24px 0 0;padding:0;display:grid;gap:10px}
+.emp-promises li{display:flex;gap:12px;align-items:baseline}
+.emp-promises li::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--orange);flex:none;transform:translateY(-1px)}
+#enquire,#options,#subsidies,#how{scroll-margin-top:80px}
+@media (max-width:1000px){.emp-why{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:900px){.emp-hero,.emp-subsidy,.emp-options{grid-template-columns:1fr}.emp-hero-media{min-height:280px}.emp-subsidy-copy{position:static}}
+@media (max-width:560px){.emp-why{grid-template-columns:1fr}.emp-option dl div{grid-template-columns:1fr;gap:2px}}
+
 /* partner with us */
 .partner{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 .partner-copy{padding:36px;border-radius:var(--r);background:linear-gradient(140deg,rgba(247,160,30,.14),rgba(14,29,51,.6));border:1px solid var(--line);display:grid;gap:18px}
