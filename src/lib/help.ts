@@ -15,7 +15,9 @@ There is no self-service password reset yet: people who are locked out should us
 After 8 failed sign-in attempts an account is paused for 15 minutes.
 
 PAGES:
-- / home page. /briefs open project briefs, filterable by sector. /briefs/<id> a single brief.
+- / home page: asks whether you are a builder, an employer or a partner, remembers the answer and sends you to your own page (/?choose=1 to switch).
+- /builders for builders (Skills Passport, how it works, open briefs). /employers for employers (four ways to start, wage subsidies, discovery call form). /partners for hackathons, campuses, incubators and hubs (ways to partner, partner tools, partnership form).
+- /briefs open project briefs, filterable by sector. /briefs/<id> a single brief.
 - /briefs/new publish a brief (organisations). Can be prefilled from templates: /briefs/new?sector=Knowledge, Insurance, Commerce or Healthcare.
 - /open-house Open House showcase: register interest (no date confirmed yet).
 - /contact "Let's talk" form; replies within two working days.

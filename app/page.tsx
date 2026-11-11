@@ -4,23 +4,24 @@ import { desc, eq } from "drizzle-orm";
 import { db, briefs } from "@/src/db";
 import { getCurrentUser } from "@/src/lib/auth";
 import { BriefShowcase, Reveal, TypedSession } from "@/src/components/Landing";
-import SmartForm from "@/src/components/SmartForm";
-import { sendPartnership } from "@/app/actions/app";
-import { PARTNER_TYPES, PARTNER_WAYS, opts } from "@/src/lib/constants";
+import { redirect } from "next/navigation";
+import { homeForRole } from "@/src/lib/audience";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ choose?: string }> }) {
   const user = await getCurrentUser();
+  // Signed-in members go straight to their own home; "/?choose=1" still shows this page.
+  if (user && user.role !== "ADMIN" && !(await searchParams).choose) redirect(homeForRole(user.role));
   const openBriefs = await db.query.briefs.findMany({
     where: eq(briefs.status, "OPEN"), orderBy: desc(briefs.createdAt), limit: 3,
     with: { owner: { columns: { organisation: true } } },
   });
 
-  // Every CTA lands somewhere real; signed-in users go straight to the relevant workspace.
-  const builderHref = user ? (user.role === "BUILDER" ? "/dashboard/passport" : "/dashboard") : "/signup?role=builder";
-  const orgHref = user ? (user.role === "ORGANISATION" || user.role === "ADMIN" ? "/talent" : "/dashboard") : "/signup?role=organisation";
-  const partnerHref = user ? (user.role === "PARTNER" ? "/dashboard/community" : "/dashboard") : "/signup?role=partner";
+  // Each audience has its own home page; choosing one is remembered for next time.
+  const builderHref = "/builders";
+  const orgHref = "/employers";
+  const partnerHref = "/partners";
 
   return (
     <>
@@ -33,9 +34,13 @@ export default async function Home() {
             <p className="eyebrow o">Exceptional talent. A community of possibility.</p>
             <h1>Great builders finding their next <span className="grad">big opportunity.</span></h1>
             <p className="lede">Connecting university, college and hackathon talent with organisations ready to build something meaningful.</p>
-            <div className="hero-ctas">
-              <Link href={builderHref} className="btn btn-primary">Explore my pathway <span className="ar">↗</span></Link>
-              <Link href={orgHref} className="btn btn-ghost">Find talent for my team <span aria-hidden>→</span></Link>
+            <div className="aud-choose" role="group" aria-labelledby="aud-q">
+              <p id="aud-q" className="aud-q">Who are you? We’ll show you what matters to you.</p>
+              <div className="aud-opts">
+                <Link href={builderHref} className="aud-opt"><b>I’m a builder</b><span>Student, graduate or hackathon talent</span><i aria-hidden>↗</i></Link>
+                <Link href={orgHref} className="aud-opt o"><b>I need a team</b><span>Employer, startup or nonprofit</span><i aria-hidden>↗</i></Link>
+                <Link href={partnerHref} className="aud-opt"><b>I connect people</b><span>Campus, community or innovation hub</span><i aria-hidden>↗</i></Link>
+              </div>
             </div>
           </div>
           <div className="hero-media">
@@ -159,7 +164,7 @@ export default async function Home() {
             <p className="muted">Project context. Individual contributions. Reviewed feedback. A record that helps people understand what you can bring to a team.</p>
             <p style={{ marginTop: 16, fontFamily: "var(--display)" }}>Voice or text. Human review. Room to grow.</p>
             <Link href={builderHref} className="btn btn-light" style={{ marginTop: 26 }}>
-              {user?.role === "BUILDER" ? "Open my passport" : "Start my passport"} <span className="ar">↗</span>
+              Start my passport <span className="ar">↗</span>
             </Link>
           </div>
           <TypedSession />
@@ -202,54 +207,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* PARTNER WITH US */}
-      <section className="sec" id="partner">
-        <div className="wrap partner reveal">
-          <div className="partner-copy">
-            <p className="eyebrow o">Partner with us</p>
-            <h2>Build the bridge with us.</h2>
-            <p className="muted">
-              Hackathons, campus zones, incubators, advisory firms and employers each hold one part of the path from potential to paid work.
-              Partner with AI Nation and we’ll connect the rest.
-            </p>
-            <ul className="partner-ways">
-              <li>
-                <b>Talent sources</b>
-                <span>Hackathons, universities and builder communities. Give your best builders a next step after the demo, with a Skills Passport and a route to paid briefs.</span>
-              </li>
-              <li>
-                <b>Demand partners</b>
-                <span>Incubators, advisory firms, startups and employers. Bring scoped problems and get assessed builders, embedded teams or managed projects.</span>
-              </li>
-              <li>
-                <b>Ecosystem hosts</b>
-                <span>Innovation hubs, summits and funders. Host an Open House, co-run a challenge track or fund placements, and see the outcomes.</span>
-              </li>
-            </ul>
-            <p className="dim" style={{ fontSize: 13.5 }}>We start every partnership with one small pilot before anything formal.</p>
-          </div>
-          <div className="card partner-card" id="partner-form">
-            <h3 style={{ fontSize: 22 }}>Start a partnership conversation</h3>
-            <p className="muted" style={{ margin: "6px 0 18px", fontSize: 14.5 }}>Takes a minute. We reply within two working days.</p>
-            <SmartForm
-              action={sendPartnership}
-              submit="Send partnership request"
-              resetOnSuccess
-              fields={[
-                { name: "name", label: "Your name", required: true, autoComplete: "name", defaultValue: user?.name ?? "", half: true },
-                { name: "email", label: "Work email", type: "email", required: true, autoComplete: "email", defaultValue: user?.email ?? "", half: true },
-                { name: "organisation", label: "Organisation", required: true, autoComplete: "organization", maxLength: 140, defaultValue: user?.organisation ?? "", half: true },
-                { name: "website", label: "Website", type: "url", placeholder: "https://", maxLength: 300, half: true },
-                { name: "partnerType", type: "select", label: "Your organisation is a", required: true, options: opts(PARTNER_TYPES, "Choose one") },
-                { name: "partnerWay", type: "select", label: "How you’d like to partner", required: true, options: opts(PARTNER_WAYS, "Choose one") },
-                { name: "message", type: "textarea", label: "Anything we should know", maxLength: 2000, placeholder: "Your next event, a problem you’d like solved, or who you’d like to reach." },
-                { name: "company_website", type: "hidden", defaultValue: "" },
-              ]}
-            />
-          </div>
-        </div>
-      </section>
-
       {/* CLOSING */}
       <section className="closing" id="closing">
         <div className="wrap reveal">
@@ -258,8 +215,8 @@ export default async function Home() {
           <p className="muted" style={{ fontSize: 19 }}>Bring your talent. Bring your challenge. Let’s find the right starting point.</p>
           <div className="row">
             <Link href={builderHref} className="btn btn-primary">I’m ready to build <span className="ar">↗</span></Link>
-            <Link href="/employers" className="btn btn-ghost">I’m looking for talent <span aria-hidden>→</span></Link>
-            <Link href="/#partner" className="btn btn-ghost">Partner with us</Link>
+            <Link href={orgHref} className="btn btn-ghost">I’m looking for talent <span aria-hidden>→</span></Link>
+            <Link href={partnerHref} className="btn btn-ghost">Partner with us</Link>
             <Link href="/contact" className="btn btn-ghost">Send us a message</Link>
           </div>
         </div>

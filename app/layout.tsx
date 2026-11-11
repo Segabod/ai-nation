@@ -4,6 +4,8 @@ import { getCurrentUser } from "@/src/lib/auth";
 import Nav from "@/src/components/Nav";
 import Footer from "@/src/components/Footer";
 import HelpBot from "@/src/components/HelpBot";
+import { cookies } from "next/headers";
+import { AUDIENCE_COOKIE, audienceForRole, isAudience } from "@/src/lib/audience";
 
 export const metadata: Metadata = {
   title: { default: "AI Nation | People. Skills. Opportunity.", template: "%s | AI Nation" },
@@ -13,6 +15,8 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
+  const remembered = (await cookies()).get(AUDIENCE_COOKIE)?.value;
+  const audience = audienceForRole(user?.role) ?? (isAudience(remembered) ? remembered : null);
   return (
     <html lang="en">
       <head>
@@ -25,7 +29,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <a className="skip" href="#main">Skip to content</a>
-        <Nav user={user ? { name: user.name, role: user.role } : null} />
+        <Nav user={user ? { name: user.name, role: user.role } : null} audience={audience} />
         <main id="main">{children}</main>
         <Footer />
         <HelpBot user={user ? { name: user.name, role: user.role } : null} />

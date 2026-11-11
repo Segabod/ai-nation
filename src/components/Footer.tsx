@@ -12,9 +12,10 @@ export default function Footer() {
         <nav aria-label="Footer">
           <Link href="/briefs">Briefs</Link>
           <Link href="/open-house">Open House</Link>
-          <Link href="/signup?role=builder">For builders</Link>
-          <Link href="/signup?role=organisation">For organisations</Link>
-          <Link href="/signup?role=partner">For partners</Link>
+          <Link href="/builders">For builders</Link>
+          <Link href="/employers">For employers</Link>
+          <Link href="/partners">For partners</Link>
+          <Link href="/?choose=1">Change who I am</Link>
           <Link href="/contact">Contact</Link>
         </nav>
         <span className="dim">© {new Date().getFullYear()} AI Nation. Concept edition.</span>
