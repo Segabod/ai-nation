@@ -14,6 +14,7 @@ export default function Nav({ user }: Props) {
     { href: "/briefs", label: "Briefs" },
     { href: "/#approach", label: "Journey" },
     { href: "/open-house", label: "Open House" },
+    { href: "/#partner", label: "Partner" },
     ...(user && (user.role === "ORGANISATION" || user.role === "ADMIN") ? [{ href: "/talent", label: "Talent" }] : []),
   ];
   return (

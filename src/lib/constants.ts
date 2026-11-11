@@ -3,6 +3,23 @@ export const ENGAGEMENTS = ["Managed project", "Embedded team", "Individual cont
 export const COMMUNITY_KINDS = ["University or college", "Hackathon community", "Innovation hub", "Bootcamp", "Other"] as const;
 export const ATTEND_AS = ["Builder demonstrating a project", "Employer or founder", "Visitor", "Campus or community partner"] as const;
 export const TOPICS = ["I’m a builder", "I need a team", "I connect people", "Partnership", "Press or other"] as const;
+export const PARTNER_TYPES = [
+  "Hackathon or builder community",
+  "University, college or campus zone",
+  "Incubator or accelerator",
+  "Advisory or consulting firm",
+  "Employer or startup",
+  "Funder or sponsor",
+  "Other",
+] as const;
+export const PARTNER_WAYS = [
+  "Send builders our way",
+  "Bring problems for builders to solve",
+  "Host or co-run an Open House",
+  "Co-run a hackathon challenge track",
+  "Sponsor or fund placements",
+  "Not sure yet, let’s talk",
+] as const;
 
 export const opts = (a: readonly string[], placeholder?: string) => [
   ...(placeholder ? [{ value: "", label: placeholder }] : []),

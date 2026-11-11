@@ -4,8 +4,9 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, users, projects, briefs, interests, communities, registrations, inquiries } from "@/src/db";
-import { getCurrentUser, requireUser } from "@/src/lib/auth";
-import { SECTORS, ENGAGEMENTS, COMMUNITY_KINDS, ATTEND_AS, TOPICS } from "@/src/lib/constants";
+import { clientIp, getCurrentUser, requireUser } from "@/src/lib/auth";
+import { hitRateLimit } from "@/src/lib/ratelimit";
+import { SECTORS, ENGAGEMENTS, COMMUNITY_KINDS, ATTEND_AS, TOPICS, PARTNER_TYPES, PARTNER_WAYS } from "@/src/lib/constants";
 import { emailSchema, firstError, list, urlSchema, values, type FormState } from "@/src/lib/forms";
 
 const txt = (min: number, max: number, msg: string) => z.string().trim().min(min, msg).max(max);
@@ -206,6 +207,40 @@ const inquirySchema = z.object({
   topic: z.enum(TOPICS, { message: "Choose a topic." }),
   message: txt(20, 3000, "Tell us a little more, at least 20 characters."),
 });
+
+/* ---------------- Partner with us ---------------- */
+
+const partnerSchema = z.object({
+  name: txt(2, 100, "Tell us your name."),
+  email: emailSchema,
+  organisation: txt(2, 140, "Tell us which organisation you’re with."),
+  partnerType: z.enum(PARTNER_TYPES, { message: "Choose what kind of organisation you are." }),
+  partnerWay: z.enum(PARTNER_WAYS, { message: "Choose how you’d like to partner." }),
+  website: urlSchema.optional(),
+  message: z.string().trim().max(2000, "Keep your note under 2,000 characters.").optional(),
+});
+
+/** Partner enquiries land in the admin inbox under the "Partnership" topic, with the details on top. */
+export async function sendPartnership(_: FormState, fd: FormData): Promise<FormState> {
+  const thanks = "Thanks for reaching out. We’ll reply within two working days to set up a first conversation.";
+  if (fd.get("company_website")) return { ok: thanks };
+  const p = partnerSchema.safeParse(Object.fromEntries(fd));
+  if (!p.success) return { error: firstError(p.error), values: values(fd) };
+  if (await hitRateLimit(`partner:${await clientIp()}`, 5, 60 * 60 * 1000)) {
+    return { error: "We’ve had several requests from your network in the last hour. Please try again later.", values: values(fd) };
+  }
+  const d = p.data;
+  const message = [
+    `Organisation: ${d.organisation}`,
+    `Type: ${d.partnerType}`,
+    `Interested in: ${d.partnerWay}`,
+    d.website ? `Website: ${d.website}` : null,
+    "",
+    d.message || "(No note added.)",
+  ].filter((l) => l !== null).join("\n");
+  await db.insert(inquiries).values({ name: d.name, email: d.email, topic: "Partnership", message });
+  return { ok: thanks };
+}
 
 export async function sendInquiry(_: FormState, fd: FormData): Promise<FormState> {
   if (fd.get("company_website")) return { ok: "Thanks, message received." };

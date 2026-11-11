@@ -147,6 +147,17 @@ section{position:relative}
 .session .caret{display:inline-block;width:2px;height:1em;background:#0b67c9;vertical-align:-2px;margin-left:2px;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 @media (max-width:900px){.passport{grid-template-columns:1fr}}
+/* partner with us */
+.partner{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.partner-copy{padding:36px;border-radius:var(--r);background:linear-gradient(140deg,rgba(247,160,30,.14),rgba(14,29,51,.6));border:1px solid var(--line);display:grid;gap:18px}
+.partner-copy h2{font-size:clamp(30px,3.6vw,48px)}
+.partner-ways{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.partner-ways li{display:grid;gap:4px;padding:16px 18px;border-radius:var(--r-sm);border:1px solid var(--line);background:rgba(5,11,22,.45)}
+.partner-ways b{font-family:var(--display);font-weight:600;color:var(--ink)}
+.partner-ways span{color:var(--muted);font-size:14.5px}
+.partner-card{padding:32px;scroll-margin-top:100px}
+#partner{scroll-margin-top:80px}
+@media (max-width:900px){.partner{grid-template-columns:1fr}.partner-copy,.partner-card{padding:24px}}
 
 /* open house */
 .openhouse{border-radius:32px;overflow:hidden;position:relative;min-height:560px;display:flex;align-items:flex-end;border:1px solid var(--line);background:

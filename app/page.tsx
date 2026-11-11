@@ -4,6 +4,9 @@ import { desc, eq } from "drizzle-orm";
 import { db, briefs } from "@/src/db";
 import { getCurrentUser } from "@/src/lib/auth";
 import { BriefShowcase, Reveal, TypedSession } from "@/src/components/Landing";
+import SmartForm from "@/src/components/SmartForm";
+import { sendPartnership } from "@/app/actions/app";
+import { PARTNER_TYPES, PARTNER_WAYS, opts } from "@/src/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -199,6 +202,54 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* PARTNER WITH US */}
+      <section className="sec" id="partner">
+        <div className="wrap partner reveal">
+          <div className="partner-copy">
+            <p className="eyebrow o">Partner with us</p>
+            <h2>Build the bridge with us.</h2>
+            <p className="muted">
+              Hackathons, campus zones, incubators, advisory firms and employers each hold one part of the path from potential to paid work.
+              Partner with AI Nation and we’ll connect the rest.
+            </p>
+            <ul className="partner-ways">
+              <li>
+                <b>Talent sources</b>
+                <span>Hackathons, universities and builder communities. Give your best builders a next step after the demo, with a Skills Passport and a route to paid briefs.</span>
+              </li>
+              <li>
+                <b>Demand partners</b>
+                <span>Incubators, advisory firms, startups and employers. Bring scoped problems and get assessed builders, embedded teams or managed projects.</span>
+              </li>
+              <li>
+                <b>Ecosystem hosts</b>
+                <span>Innovation hubs, summits and funders. Host an Open House, co-run a challenge track or fund placements, and see the outcomes.</span>
+              </li>
+            </ul>
+            <p className="dim" style={{ fontSize: 13.5 }}>We start every partnership with one small pilot before anything formal.</p>
+          </div>
+          <div className="card partner-card" id="partner-form">
+            <h3 style={{ fontSize: 22 }}>Start a partnership conversation</h3>
+            <p className="muted" style={{ margin: "6px 0 18px", fontSize: 14.5 }}>Takes a minute. We reply within two working days.</p>
+            <SmartForm
+              action={sendPartnership}
+              submit="Send partnership request"
+              resetOnSuccess
+              fields={[
+                { name: "name", label: "Your name", required: true, autoComplete: "name", defaultValue: user?.name ?? "", half: true },
+                { name: "email", label: "Work email", type: "email", required: true, autoComplete: "email", defaultValue: user?.email ?? "", half: true },
+                { name: "organisation", label: "Organisation", required: true, autoComplete: "organization", maxLength: 140, defaultValue: user?.organisation ?? "", half: true },
+                { name: "website", label: "Website", type: "url", placeholder: "https://", maxLength: 300, half: true },
+                { name: "partnerType", type: "select", label: "Your organisation is a", required: true, options: opts(PARTNER_TYPES, "Choose one") },
+                { name: "partnerWay", type: "select", label: "How you’d like to partner", required: true, options: opts(PARTNER_WAYS, "Choose one") },
+                { name: "message", type: "textarea", label: "Anything we should know", maxLength: 2000, placeholder: "Your next event, a problem you’d like solved, or who you’d like to reach." },
+                { name: "company_website", type: "hidden", defaultValue: "" },
+              ]}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* CLOSING */}
       <section className="closing" id="closing">
         <div className="wrap reveal">
@@ -208,6 +259,7 @@ export default async function Home() {
           <div className="row">
             <Link href={builderHref} className="btn btn-primary">I’m ready to build <span className="ar">↗</span></Link>
             <Link href={orgHref} className="btn btn-ghost">I’m looking for talent <span aria-hidden>→</span></Link>
+            <Link href="/#partner" className="btn btn-ghost">Partner with us</Link>
             <Link href="/contact" className="btn btn-ghost">Send us a message</Link>
           </div>
         </div>
