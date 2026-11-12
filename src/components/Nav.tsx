@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "./Logo";
 import ThemeToggle from "./ThemeToggle";
-import { AUDIENCES, audienceForPath, type Audience } from "@/src/lib/audience";
+import { AUDIENCES, LANDING, audienceForPath, type Audience } from "@/src/lib/audience";
 
 type Props = { user: { name: string; role: string } | null; audience: Audience | null; theme: "dark" | "light" };
 
@@ -56,12 +56,11 @@ export default function Nav({ user, audience, theme }: Props) {
   // The page you are on wins; otherwise your role, then what you chose last time.
   const aud = audienceForPath(path) ?? audience;
   const links = linksFor(aud, user?.role ?? null);
-  const home = aud ? AUDIENCES[aud].path : "/";
 
   return (
     <header className="nav">
       <div className="wrap nav-inner" style={{ position: "relative" }}>
-        <Link href={home} className="brand" aria-label="AI Nation home">
+        <Link href={LANDING} className="brand" aria-label="AI Nation home">
           <Logo /> ai nation
         </Link>
         <button className="nav-toggle" aria-expanded={open} aria-controls="nav-links" onClick={() => setOpen(!open)}>

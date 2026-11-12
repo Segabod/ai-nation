@@ -5,6 +5,9 @@
  */
 export const AUDIENCE_COOKIE = "ain_aud";
 
+/** Where the AI Nation logo goes from any page: the landing page, without redirects. */
+export const LANDING = "/?home=1";
+
 export const AUDIENCES = {
   builder: { path: "/builders", label: "Builder", who: "Students, graduates & independent talent" },
   employer: { path: "/employers", label: "Employer", who: "Startups, businesses & nonprofits" },
