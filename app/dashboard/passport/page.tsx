@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import { db, projects, projectFiles } from "@/src/db";
+import { db, projects, projectFiles, communities } from "@/src/db";
+import { SCHOOLS } from "@/src/lib/schools";
 import { asc } from "drizzle-orm";
 import EvidenceFiles from "@/src/components/EvidenceFiles";
 import EvidenceUploader from "@/src/components/EvidenceUploader";
@@ -17,6 +18,9 @@ export default async function Passport({ searchParams }: { searchParams: Promise
   const { welcome } = await searchParams;
   const isBuilder = user.role === "BUILDER";
   const projs = isBuilder ? await db.query.projects.findMany({ where: eq(projects.userId, user.id), orderBy: desc(projects.createdAt), with: { files: { orderBy: asc(projectFiles.createdAt) } } }) : [];
+  // registered community partners first, then the built-in list
+  const partners = isBuilder ? await db.select({ name: communities.name }).from(communities) : [];
+  const schoolOptions = Array.from(new Set([...partners.map((c) => c.name.trim()), ...SCHOOLS])).filter(Boolean);
   const canUpload = uploadsEnabled() && Boolean(user.emailVerifiedAt);
 
   return (
@@ -40,13 +44,13 @@ export default async function Passport({ searchParams }: { searchParams: Promise
             variant="blue"
             fields={[
               { name: "name", label: "Full name", required: true, defaultValue: user.name },
-              { name: "headline", label: "Headline", maxLength: 140, defaultValue: user.headline ?? "", placeholder: isBuilder ? "e.g. Final-year CS student building retrieval tools" : "e.g. Head of Operations" },
-              ...(isBuilder ? [{ name: "organisation", label: "School or community", defaultValue: user.organisation ?? "", help: "Links you to your campus or community partner." }] : []),
-              { name: "location", label: "Location", defaultValue: user.location ?? "" },
-              { name: "bio", type: "textarea" as const, label: "Short bio", maxLength: 1500, defaultValue: user.bio ?? "" },
+              { name: "headline", label: "Headline", required: isBuilder, maxLength: 140, defaultValue: user.headline ?? "", placeholder: isBuilder ? "e.g. Final-year CS student building retrieval tools" : "e.g. Head of Operations" },
+              ...(isBuilder ? [{ name: "organisation", type: "combo" as const, suggestions: schoolOptions, label: "School or community", required: true, maxLength: 140, defaultValue: user.organisation ?? "", placeholder: "Start typing, e.g. Toronto Metropolitan University", help: "Pick from the list or type your own. Links you to your campus or community partner." }] : []),
+              { name: "location", label: "Location", required: isBuilder, defaultValue: user.location ?? "" },
+              { name: "bio", type: "textarea" as const, label: "Short bio", required: isBuilder, maxLength: 1500, defaultValue: user.bio ?? "" },
               ...(isBuilder ? [
-                { name: "skills", label: "Skills", defaultValue: user.skills.join(", "), help: "Comma separated, e.g. Python, RAG, React, UX research" },
-                { name: "links", label: "Links", defaultValue: user.links.join(", "), help: "GitHub, portfolio, LinkedIn. Comma separated, full https:// links." },
+                { name: "skills", label: "Skills", required: true, defaultValue: user.skills.join(", "), help: "Comma separated, e.g. Python, RAG, React, UX research" },
+                { name: "links", label: "Links", required: true, defaultValue: user.links.join(", "), help: "GitHub, portfolio, LinkedIn. Comma separated, full https:// links." },
                 { name: "openToWork", type: "checkbox" as const, label: "Show me in the talent directory as open to work", defaultValue: user.openToWork ? "on" : "" },
               ] : []),
             ]}
@@ -66,8 +70,8 @@ export default async function Passport({ searchParams }: { searchParams: Promise
                   { name: "title", label: "Project title", required: true, maxLength: 120 },
                   { name: "context", type: "textarea", label: "Project context", required: true, maxLength: 1500, placeholder: "The problem, the setting (course, hackathon, client) and the outcome." },
                   { name: "contribution", type: "textarea", label: "Your individual contribution", required: true, maxLength: 1500, placeholder: "What you personally built or decided, and what you changed when the first approach didn’t work." },
-                  { name: "stack", label: "Tools and stack", help: "Comma separated" },
-                  { name: "url", type: "url", label: "Link to demo or repo", placeholder: "https://" },
+                  { name: "stack", label: "Tools and stack", required: true, help: "Comma separated" },
+                  { name: "url", type: "url", label: "Link to demo or repo", required: true, placeholder: "https://" },
                 ]}
               />
             </div>
