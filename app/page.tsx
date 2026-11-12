@@ -30,10 +30,11 @@ const TRIPS: { i: number; o: number; dur: string; begin: string; org?: boolean }
 ];
 const SOURCES = ["Hackathons", "Universities", "Colleges", "Builder communities", "Incubators", "Employers"];
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ choose?: string }> }) {
+export default async function Home({ searchParams }: { searchParams: Promise<{ choose?: string; home?: string }> }) {
   const user = await getCurrentUser();
-  // Signed-in members go straight to their own home; "/?choose=1" still shows this page.
-  if (user && user.role !== "ADMIN" && !(await searchParams).choose) redirect(homeForRole(user.role));
+  // Signed-in members go straight to their own home; "/?choose=1" and the logo link ("/?home=1") still show this page.
+  const sp = await searchParams;
+  if (user && user.role !== "ADMIN" && !sp.choose && !sp.home) redirect(homeForRole(user.role));
   const open = await db.$count(briefs, eq(briefs.status, "OPEN"));
 
   return (

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { LANDING } from "@/src/lib/audience";
 
 export default function Footer() {
   return (
     <footer className="foot">
       <div className="wrap foot-in">
         <div className="row">
-          <span className="brand" style={{ fontSize: 16 }}><Logo /> ai nation</span>
+          <Link href={LANDING} className="brand" style={{ fontSize: 16 }} aria-label="AI Nation home"><Logo /> ai nation</Link>
           <span className="dim">People. Skills. Opportunity.</span>
         </div>
         <nav aria-label="Footer">

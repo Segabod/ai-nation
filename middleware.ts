@@ -20,7 +20,9 @@ export function middleware(req: NextRequest) {
   }
 
   // Homepage: "/?choose=1" forgets the remembered audience and shows the chooser.
+  // "/?home=1" (the logo link) shows the landing page without forgetting anything.
   if (pathname === "/") {
+    if (searchParams.has("home")) return NextResponse.next();
     if (searchParams.has("choose")) {
       const res = NextResponse.next();
       res.cookies.delete(AUDIENCE_COOKIE);
