@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import { db, projects } from "@/src/db";
+import { db, projects, projectFiles } from "@/src/db";
+import { asc } from "drizzle-orm";
+import EvidenceFiles from "@/src/components/EvidenceFiles";
+import EvidenceUploader from "@/src/components/EvidenceUploader";
+import { EVIDENCE_MAX_FILES, blobAccess, evidencePrefix, uploadsEnabled } from "@/src/lib/evidence";
 import { requireUser } from "@/src/lib/auth";
 import SmartForm from "@/src/components/SmartForm";
-import { addProject, deleteProject, updateProfile } from "@/app/actions/app";
+import { addProject, deleteProject, removeEvidence, updateProfile } from "@/app/actions/app";
 
 export const metadata = { title: "Skills Passport" };
 export const dynamic = "force-dynamic";
@@ -12,7 +16,8 @@ export default async function Passport({ searchParams }: { searchParams: Promise
   const user = await requireUser();
   const { welcome } = await searchParams;
   const isBuilder = user.role === "BUILDER";
-  const projs = isBuilder ? await db.query.projects.findMany({ where: eq(projects.userId, user.id), orderBy: desc(projects.createdAt) }) : [];
+  const projs = isBuilder ? await db.query.projects.findMany({ where: eq(projects.userId, user.id), orderBy: desc(projects.createdAt), with: { files: { orderBy: asc(projectFiles.createdAt) } } }) : [];
+  const canUpload = uploadsEnabled() && Boolean(user.emailVerifiedAt);
 
   return (
     <div className="stack">
@@ -85,6 +90,12 @@ export default async function Passport({ searchParams }: { searchParams: Promise
                   <p style={{ fontSize: 14.5 }}><b style={{ color: "var(--orange)" }}>My contribution: </b>{p.contribution}</p>
                   <div className="tags">{p.stack.map((s) => <span key={s} className="chip">{s}</span>)}</div>
                   {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer nofollow" className="linkish">View project ↗</a>}
+                  <EvidenceFiles files={p.files} remove={removeEvidence} />
+                  {canUpload ? (
+                    <EvidenceUploader projectId={p.id} prefix={evidencePrefix(user.id, p.id)} access={blobAccess()} remaining={EVIDENCE_MAX_FILES - p.files.length} />
+                  ) : (
+                    <small className="dim">{uploadsEnabled() ? "Confirm your email to attach screenshots, slides or PDFs." : "File attachments are coming soon."}</small>
+                  )}
                 </article>
               ))}
             </div>

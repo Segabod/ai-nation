@@ -15,19 +15,19 @@ const sql = postgres(url, { max: 1, prepare: false });
 const hash = (p) => bcrypt.hash(p, 12);
 
 await sql`
-  insert into users (id, email, password_hash, name, role, organisation)
-  values (${randomUUID()}, ${email}, ${await hash(password)}, 'AI Nation Admin', 'ADMIN', 'AI Nation')
-  on conflict (email) do update set role = 'ADMIN', password_hash = excluded.password_hash`;
+  insert into users (id, email, password_hash, name, role, organisation, email_verified_at)
+  values (${randomUUID()}, ${email}, ${await hash(password)}, 'AI Nation Admin', 'ADMIN', 'AI Nation', now())
+  on conflict (email) do update set role = 'ADMIN', password_hash = excluded.password_hash, email_verified_at = coalesce(users.email_verified_at, now())`;
 console.log(`Admin ready: ${email}`);
 
 if (process.argv.includes("--demo")) {
   const demoPw = await hash("DemoPass2026");
   const org = randomUUID(), b1 = randomUUID(), b2 = randomUUID(), partner = randomUUID();
   await sql`insert into users ${sql([
-    { id: org, email: "org@demo.aination", password_hash: demoPw, name: "Adaeze Okafor", role: "ORGANISATION", organisation: "Northwind Mutual", headline: "Head of Claims Operations", bio: null, skills: [], links: [] },
-    { id: b1, email: "builder@demo.aination", password_hash: demoPw, name: "Tobi Adeyemi", role: "BUILDER", organisation: "Toronto Metropolitan University", headline: "MEng student building retrieval and document AI", bio: "I build practical AI tools with a bias for evaluation and human review.", skills: ["Python", "RAG", "FastAPI", "React", "Evaluation"], links: ["https://github.com/example"] },
-    { id: b2, email: "builder2@demo.aination", password_hash: demoPw, name: "Maya Chen", role: "BUILDER", organisation: "Toronto Metropolitan University", headline: "Full-stack developer and hackathon winner", bio: null, skills: ["TypeScript", "Next.js", "Postgres", "UX"], links: [] },
-    { id: partner, email: "partner@demo.aination", password_hash: demoPw, name: "Jordan Blake", role: "PARTNER", organisation: "Toronto Metropolitan University", headline: null, bio: null, skills: [], links: [] },
+    { id: org, email: "org@demo.aination", password_hash: demoPw, name: "Adaeze Okafor", role: "ORGANISATION", organisation: "Northwind Mutual", headline: "Head of Claims Operations", bio: null, skills: [], links: [], email_verified_at: new Date() },
+    { id: b1, email: "builder@demo.aination", password_hash: demoPw, name: "Tobi Adeyemi", role: "BUILDER", organisation: "Toronto Metropolitan University", headline: "MEng student building retrieval and document AI", bio: "I build practical AI tools with a bias for evaluation and human review.", skills: ["Python", "RAG", "FastAPI", "React", "Evaluation"], links: ["https://github.com/example"], email_verified_at: new Date() },
+    { id: b2, email: "builder2@demo.aination", password_hash: demoPw, name: "Maya Chen", role: "BUILDER", organisation: "Toronto Metropolitan University", headline: "Full-stack developer and hackathon winner", bio: null, skills: ["TypeScript", "Next.js", "Postgres", "UX"], links: [], email_verified_at: new Date() },
+    { id: partner, email: "partner@demo.aination", password_hash: demoPw, name: "Jordan Blake", role: "PARTNER", organisation: "Toronto Metropolitan University", headline: null, bio: null, skills: [], links: [], email_verified_at: new Date() },
   ])} on conflict (email) do nothing`;
   const [{ id: orgId }] = await sql`select id from users where email = 'org@demo.aination'`;
   const [{ id: b1Id }] = await sql`select id from users where email = 'builder@demo.aination'`;

@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db, users, briefs, inquiries, sessions } from "@/src/db";
 import { requireAdmin } from "@/src/lib/auth";
+import { after } from "next/server";
+import { notifyBriefDecision } from "@/src/lib/notify";
 
 const ROLES = ["BUILDER", "ORGANISATION", "PARTNER", "ADMIN"] as const;
 const BRIEF = ["PENDING", "OPEN", "IN_PROGRESS", "CLOSED", "REJECTED"] as const;
@@ -31,7 +33,11 @@ export async function adminSetBriefStatus(fd: FormData) {
   await requireAdmin();
   const status = String(fd.get("status")) as (typeof BRIEF)[number];
   if (!BRIEF.includes(status)) return;
-  await db.update(briefs).set({ status }).where(eq(briefs.id, String(fd.get("id"))));
+  const id = String(fd.get("id"));
+  const before = await db.query.briefs.findFirst({ where: eq(briefs.id, id), columns: { status: true } });
+  if (!before || before.status === status) return;
+  await db.update(briefs).set({ status }).where(eq(briefs.id, id));
+  if (before.status === "PENDING" && (status === "OPEN" || status === "REJECTED")) after(() => notifyBriefDecision(id, status === "OPEN"));
   revalidatePath("/admin");
   revalidatePath("/briefs");
 }

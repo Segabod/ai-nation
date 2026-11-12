@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { desc, eq } from "drizzle-orm";
-import { db, users, projects } from "@/src/db";
+import { asc, desc, eq } from "drizzle-orm";
+import { db, users, projects, projectFiles } from "@/src/db";
+import EvidenceFiles from "@/src/components/EvidenceFiles";
 import { requireUser } from "@/src/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ export default async function Builder({ params }: { params: Promise<{ id: string
   if (!allowed) notFound();
   const u = await db.query.users.findFirst({ where: eq(users.id, id) });
   if (!u || u.role !== "BUILDER" || u.suspended) notFound();
-  const projs = await db.query.projects.findMany({ where: eq(projects.userId, u.id), orderBy: desc(projects.createdAt) });
+  const projs = await db.query.projects.findMany({ where: eq(projects.userId, u.id), orderBy: desc(projects.createdAt), with: { files: { orderBy: asc(projectFiles.createdAt) } } });
 
   return (
     <div className="page wrap">
@@ -37,6 +38,7 @@ export default async function Builder({ params }: { params: Promise<{ id: string
                 <p style={{ fontSize: 14.5 }}><b style={{ color: "var(--orange)" }}>Individual contribution: </b>{p.contribution}</p>
                 <div className="tags">{p.stack.map((s) => <span key={s} className="chip">{s}</span>)}</div>
                 {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer nofollow" className="linkish">View project ↗</a>}
+                <EvidenceFiles files={p.files} />
               </article>
             ))}
           </div>
