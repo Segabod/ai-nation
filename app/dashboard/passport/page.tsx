@@ -40,13 +40,13 @@ export default async function Passport({ searchParams }: { searchParams: Promise
             variant="blue"
             fields={[
               { name: "name", label: "Full name", required: true, defaultValue: user.name },
-              { name: "headline", label: "Headline", maxLength: 140, defaultValue: user.headline ?? "", placeholder: isBuilder ? "e.g. Final-year CS student building retrieval tools" : "e.g. Head of Operations" },
-              ...(isBuilder ? [{ name: "organisation", label: "School or community", defaultValue: user.organisation ?? "", help: "Links you to your campus or community partner." }] : []),
-              { name: "location", label: "Location", defaultValue: user.location ?? "" },
-              { name: "bio", type: "textarea" as const, label: "Short bio", maxLength: 1500, defaultValue: user.bio ?? "" },
+              { name: "headline", label: "Headline", required: isBuilder, maxLength: 140, defaultValue: user.headline ?? "", placeholder: isBuilder ? "e.g. Final-year CS student building retrieval tools" : "e.g. Head of Operations" },
+              ...(isBuilder ? [{ name: "organisation", label: "School or community", required: true, defaultValue: user.organisation ?? "", help: "Links you to your campus or community partner." }] : []),
+              { name: "location", label: "Location", required: isBuilder, defaultValue: user.location ?? "" },
+              { name: "bio", type: "textarea" as const, label: "Short bio", required: isBuilder, maxLength: 1500, defaultValue: user.bio ?? "" },
               ...(isBuilder ? [
-                { name: "skills", label: "Skills", defaultValue: user.skills.join(", "), help: "Comma separated, e.g. Python, RAG, React, UX research" },
-                { name: "links", label: "Links", defaultValue: user.links.join(", "), help: "GitHub, portfolio, LinkedIn. Comma separated, full https:// links." },
+                { name: "skills", label: "Skills", required: true, defaultValue: user.skills.join(", "), help: "Comma separated, e.g. Python, RAG, React, UX research" },
+                { name: "links", label: "Links", required: true, defaultValue: user.links.join(", "), help: "GitHub, portfolio, LinkedIn. Comma separated, full https:// links." },
                 { name: "openToWork", type: "checkbox" as const, label: "Show me in the talent directory as open to work", defaultValue: user.openToWork ? "on" : "" },
               ] : []),
             ]}
@@ -66,8 +66,8 @@ export default async function Passport({ searchParams }: { searchParams: Promise
                   { name: "title", label: "Project title", required: true, maxLength: 120 },
                   { name: "context", type: "textarea", label: "Project context", required: true, maxLength: 1500, placeholder: "The problem, the setting (course, hackathon, client) and the outcome." },
                   { name: "contribution", type: "textarea", label: "Your individual contribution", required: true, maxLength: 1500, placeholder: "What you personally built or decided, and what you changed when the first approach didn’t work." },
-                  { name: "stack", label: "Tools and stack", help: "Comma separated" },
-                  { name: "url", type: "url", label: "Link to demo or repo", placeholder: "https://" },
+                  { name: "stack", label: "Tools and stack", required: true, help: "Comma separated" },
+                  { name: "url", type: "url", label: "Link to demo or repo", required: true, placeholder: "https://" },
                 ]}
               />
             </div>

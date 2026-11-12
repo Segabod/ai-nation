@@ -24,10 +24,25 @@ const profileSchema = z.object({
   bio: z.string().trim().max(1500).optional(),
 });
 
+/** Builders must fill in every passport field. */
+const builderProfileSchema = z.object({
+  name: txt(2, 100, "Tell us your name."),
+  headline: txt(2, 140, "Add a headline."),
+  organisation: txt(2, 140, "Add your school or community."),
+  location: txt(2, 100, "Add your location."),
+  bio: txt(20, 1500, "Write a short bio of at least 20 characters."),
+});
+
 export async function updateProfile(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireUser();
   const p = profileSchema.safeParse(Object.fromEntries(fd));
   if (!p.success) return { error: firstError(p.error), values: values(fd) };
+  if (user.role === "BUILDER") {
+    const b = builderProfileSchema.safeParse(Object.fromEntries(fd));
+    if (!b.success) return { error: firstError(b.error), values: values(fd) };
+    if (!list(fd.get("skills"), 20).length) return { error: "Add at least one skill.", values: values(fd) };
+    if (!list(fd.get("links"), 6).length) return { error: "Add at least one link, such as GitHub, a portfolio or LinkedIn.", values: values(fd) };
+  }
   const links = list(fd.get("links"), 6);
   for (const l of links) {
     const r = urlSchema.safeParse(l);
@@ -54,13 +69,14 @@ const projectSchema = z.object({
   title: txt(3, 120, "Give the project a title."),
   context: txt(20, 1500, "Describe the project context in at least 20 characters."),
   contribution: txt(20, 1500, "Describe your individual contribution in at least 20 characters."),
-  url: urlSchema.optional(),
+  url: z.string().trim().min(1, "Add a link to the demo or repo.").pipe(urlSchema),
 });
 
 export async function addProject(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireUser(["BUILDER"]);
   const p = projectSchema.safeParse(Object.fromEntries(fd));
   if (!p.success) return { error: firstError(p.error), values: values(fd) };
+  if (!list(fd.get("stack"), 12).length) return { error: "Add at least one tool or technology you used.", values: values(fd) };
   await db.insert(projects).values({
     userId: user.id,
     title: p.data.title,
