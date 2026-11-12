@@ -11,6 +11,7 @@
     "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
+    "@vercel/blob": "2.9.0",
     "ai": "7.0.169",
     "bcryptjs": "3.0.3",
     "drizzle-orm": "0.45.4",

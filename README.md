@@ -21,6 +21,18 @@ Built with Next.js 15 (App Router, server actions), PostgreSQL and Drizzle ORM. 
 - Middleware bounces anonymous visitors from private areas; `?next=` return path is validated against open redirects
 - Security headers (frame denial, nosniff, referrer policy), honeypot spam traps on public forms, CSV formula-injection protection
 
+**Email (Resend)**
+- Email verification on sign-up: new members can build their profile straight away, but must confirm their email before applying to briefs or publishing one; a banner on every dashboard page resends the link (3 per hour)
+- Password reset: single-use links that expire after one hour; same response whether or not the email exists; resetting signs out every other device and sends a "password changed" notice
+- Notifications: builders hear when they are shortlisted, accepted or declined; organisations hear about new interest and when admins approve or reject a brief
+- Tokens are random 256-bit values; only a SHA-256 hash is stored. Links use `APP_URL`, never the request's Host header
+- Without `RESEND_API_KEY`, every email is printed to the server log so you can develop locally
+
+**Project evidence (Vercel Blob)**
+- Builders attach up to 6 files per passport project (images, PDF, PowerPoint, Word; 10 MB each), uploaded straight from the browser to Blob
+- The upload route only issues a token for the builder's own project and folder; after upload the server re-checks type, size and location before recording the file
+- Files are private and served through `/api/evidence/[id]` only to the builder, organisations and admins; removing a project removes its files
+
 **Help assistant ("Nation Guide")**
 - Chat bubble on every page that answers questions about using AI Nation, links people to the right page, knows which briefs are open and who is asking
 - Runs through Vercel AI Gateway (authenticated automatically on Vercel; set `AI_GATEWAY_API_KEY` to run it locally). Tries Claude Haiku 5.5, then Claude Haiku 4.5, then Gemini 2.5 Flash Lite; override the order with `HELP_MODELS`
@@ -53,8 +65,10 @@ Demo accounts (password `DemoPass2026`): `org@demo.aination`, `builder@demo.aina
 
 1. The brand photos (`lights.jpg`, `neon.jpg`, `chips.jpg`, `event.jpg`) sit at the repo root and are copied into `public/` at build time by `scripts/copy-assets.mjs`.
 2. In the Vercel project, add a Postgres database (Storage → Neon), which sets `DATABASE_URL`. Add `DIRECT_URL` (the unpooled URL), `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
-3. Nothing to run by hand: every build applies pending migrations from `drizzle/` and creates the admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD` if that account does not exist yet (`scripts/migrate.mjs`).
-4. Push to `main`. Vercel builds with `next build`.
+3. Email: create a Resend account, verify your sending domain, then add `RESEND_API_KEY`, `EMAIL_FROM` and `APP_URL`.
+4. Uploads: in the Vercel project, Storage → Create → Blob (private) and connect it; this sets `BLOB_READ_WRITE_TOKEN`.
+5. Nothing to run by hand: every build applies pending migrations from `drizzle/` and creates the admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD` if that account does not exist yet (`scripts/migrate.mjs`).
+6. Push to `main`. Vercel builds with `next build`.
 
 ## Project layout
 

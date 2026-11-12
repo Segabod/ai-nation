@@ -1,10 +1,14 @@
 "use server";
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db, users, projects, briefs, interests, communities, registrations, inquiries } from "@/src/db";
-import { clientIp, getCurrentUser, requireUser } from "@/src/lib/auth";
+import { after } from "next/server";
+import { notifyBriefDecision, notifyInterestStatus, notifyNewInterest } from "@/src/lib/notify";
+import { db, users, projects, projectFiles, briefs, interests, communities, registrations, inquiries } from "@/src/db";
+import { del, head } from "@vercel/blob";
+import { EVIDENCE_MAX_BYTES, EVIDENCE_MAX_FILES, EVIDENCE_TYPES, uploadsEnabled, validEvidencePath } from "@/src/lib/evidence";
+import { clientIp, getCurrentUser, requireUser, verificationError } from "@/src/lib/auth";
 import { hitRateLimit } from "@/src/lib/ratelimit";
 import { SECTORS, ENGAGEMENTS, COMMUNITY_KINDS, ATTEND_AS, TOPICS, PARTNER_TYPES, PARTNER_WAYS, EMPLOYER_OPTIONS, EMPLOYER_SIZES } from "@/src/lib/constants";
 import { emailSchema, firstError, list, urlSchema, values, type FormState } from "@/src/lib/forms";
@@ -71,15 +75,61 @@ export async function addProject(_: FormState, fd: FormData): Promise<FormState>
 
 export async function deleteProject(fd: FormData) {
   const user = await requireUser(["BUILDER"]);
-  // ownership enforced in the WHERE clause
-  await db.delete(projects).where(and(eq(projects.id, String(fd.get("id"))), eq(projects.userId, user.id)));
+  const id = String(fd.get("id"));
+  const files = await db.query.projectFiles.findMany({ where: and(eq(projectFiles.projectId, id), eq(projectFiles.userId, user.id)), columns: { url: true } });
+  // ownership enforced in the WHERE clause; file rows cascade
+  const gone = await db.delete(projects).where(and(eq(projects.id, id), eq(projects.userId, user.id))).returning({ id: projects.id });
+  if (gone.length && files.length && uploadsEnabled()) after(() => del(files.map((f) => f.url)).catch((e) => console.error("[evidence] cleanup failed", e)));
   revalidatePath("/dashboard/passport");
+}
+
+/* ---------------- Builder: project evidence files ---------------- */
+
+/** Called by the browser after a file reaches Vercel Blob; checks it server side before recording it. */
+export async function attachEvidence(input: { projectId: string; url: string; pathname: string; name: string }): Promise<{ error?: string }> {
+  const user = await requireUser(["BUILDER"]);
+  const reject = async (error: string) => {
+    if (uploadsEnabled()) await del(input.url).catch(() => {});
+    return { error };
+  };
+  const proj = await db.query.projects.findFirst({ where: and(eq(projects.id, input.projectId), eq(projects.userId, user.id)), columns: { id: true } });
+  if (!proj || !validEvidencePath(input.pathname, user.id, input.projectId)) return reject("That file doesn’t belong to one of your projects.");
+  let meta;
+  try {
+    meta = await head(input.url);
+  } catch {
+    return { error: "We couldn’t find that upload. Please try again." };
+  }
+  if (meta.pathname !== input.pathname) return reject("That upload doesn’t match the file you chose.");
+  if (!EVIDENCE_TYPES.includes(meta.contentType) || meta.size > EVIDENCE_MAX_BYTES) return reject("That file type or size isn’t allowed.");
+  const [{ n }] = await db.select({ n: count() }).from(projectFiles).where(eq(projectFiles.projectId, input.projectId));
+  if (n >= EVIDENCE_MAX_FILES) return reject(`A project can hold up to ${EVIDENCE_MAX_FILES} files.`);
+  const name = input.name.replace(/[\u0000-\u001f]/g, "").trim().slice(0, 140) || "Evidence file";
+  await db.insert(projectFiles).values({
+    projectId: input.projectId, userId: user.id, url: meta.url, pathname: meta.pathname,
+    name, contentType: meta.contentType, size: meta.size,
+  }).onConflictDoNothing();
+  revalidatePath("/dashboard/passport");
+  revalidatePath(`/talent/${user.id}`);
+  return {};
+}
+
+export async function removeEvidence(fd: FormData) {
+  const user = await requireUser(["BUILDER"]);
+  const [row] = await db.delete(projectFiles)
+    .where(and(eq(projectFiles.id, String(fd.get("id"))), eq(projectFiles.userId, user.id)))
+    .returning({ url: projectFiles.url });
+  if (row && uploadsEnabled()) after(() => del(row.url).catch((e) => console.error("[evidence] delete failed", e)));
+  revalidatePath("/dashboard/passport");
+  revalidatePath(`/talent/${user.id}`);
 }
 
 /* ---------------- Builder: express interest in a brief ---------------- */
 
 export async function expressInterest(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireUser(["BUILDER"]);
+  const unverified = verificationError(user);
+  if (unverified) return { error: unverified, values: values(fd) };
   const briefId = String(fd.get("briefId"));
   const pitch = String(fd.get("pitch") || "").trim();
   if (pitch.length < 30) return { error: "Tell the team why you’re a fit in at least 30 characters.", values: values(fd) };
@@ -89,6 +139,7 @@ export async function expressInterest(_: FormState, fd: FormData): Promise<FormS
   if (brief.isSample) return { error: "This is a sample brief, so it isn’t open for applications." };
   const res = await db.insert(interests).values({ briefId, userId: user.id, pitch }).onConflictDoNothing().returning({ id: interests.id });
   if (!res.length) return { error: "You’ve already expressed interest in this brief." };
+  after(() => notifyNewInterest(briefId, user.name));
   revalidatePath(`/briefs/${briefId}`);
   revalidatePath("/dashboard");
   return { ok: "Interest sent. The team will see your note and Skills Passport." };
@@ -114,6 +165,8 @@ const briefSchema = z.object({
 
 export async function createBrief(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireUser(["ORGANISATION"]);
+  const unverified = verificationError(user);
+  if (unverified) return { error: unverified, values: values(fd) };
   const p = briefSchema.safeParse(Object.fromEntries(fd));
   if (!p.success) return { error: firstError(p.error), values: values(fd) };
   const [b] = await db
@@ -140,6 +193,7 @@ export async function setBriefStatus(fd: FormData) {
   if (!allowed.includes(status)) return;
   if (user.role !== "ADMIN" && (brief.status === "PENDING" || brief.status === "REJECTED")) return;
   await db.update(briefs).set({ status: status as typeof brief.status }).where(eq(briefs.id, briefId));
+  if (brief.status === "PENDING" && (status === "OPEN" || status === "REJECTED")) after(() => notifyBriefDecision(briefId, status === "OPEN"));
   revalidatePath(`/dashboard/briefs/${briefId}`);
   revalidatePath("/briefs");
 }
@@ -151,7 +205,9 @@ export async function setInterestStatus(fd: FormData) {
   const row = await db.query.interests.findFirst({ where: eq(interests.id, id) });
   if (!row) return;
   await ownBrief(row.briefId);
+  if (row.status === status) return;
   await db.update(interests).set({ status: status as typeof row.status }).where(eq(interests.id, id));
+  if (status !== "SUBMITTED") after(() => notifyInterestStatus(id));
   revalidatePath(`/dashboard/briefs/${row.briefId}`);
 }
 

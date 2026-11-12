@@ -8,7 +8,7 @@ import { withdrawInterest } from "@/app/actions/app";
 export const metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
 
-export default async function Dashboard({ searchParams }: { searchParams: Promise<{ welcome?: string; denied?: string }> }) {
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ welcome?: string; denied?: string; verified?: string; verify?: string; reset?: string }> }) {
   const user = await requireUser();
   const sp = await searchParams;
   const first = user.name.split(" ")[0];
@@ -17,6 +17,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     <>
       {sp.denied && <p className="notice err" style={{ marginBottom: 16 }}>That area isn’t available for your account type.</p>}
       {sp.welcome && <p className="notice ok" style={{ marginBottom: 16 }}>Welcome to AI Nation, {first}. Your account is ready.</p>}
+      {sp.verified && <p className="notice ok" style={{ marginBottom: 16 }}>Thanks, {first}. Your email is confirmed.</p>}
+      {sp.verify === "expired" && <p className="notice err" style={{ marginBottom: 16 }}>That confirmation link has expired or was already used.{user.emailVerifiedAt ? " Your email is already confirmed, so there’s nothing more to do." : " Use the button above to get a new one."}</p>}
+      {sp.reset && <p className="notice ok" style={{ marginBottom: 16 }}>Your password was changed and every other device was signed out.</p>}
     </>
   );
 

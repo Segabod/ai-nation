@@ -1,5 +1,5 @@
 import {
-  pgTable, pgEnum, text, timestamp, boolean, uniqueIndex, index,
+  pgTable, pgEnum, text, timestamp, boolean, integer, uniqueIndex, index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -25,6 +25,8 @@ export const users = pgTable("users", {
   links: text("links").array().notNull().default([]),
   openToWork: boolean("open_to_work").notNull().default(true),
   suspended: boolean("suspended").notNull().default(false),
+  /** Set once the member clicks the link in their verification email. */
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   createdAt: created(),
 });
 
@@ -124,8 +126,9 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   interests: many(interests),
   community: one(communities, { fields: [users.id], references: [communities.userId] }),
 }));
-export const projectsRelations = relations(projects, ({ one }) => ({
+export const projectsRelations = relations(projects, ({ one, many }) => ({
   user: one(users, { fields: [projects.userId], references: [users.id] }),
+  files: many(projectFiles),
 }));
 export const communitiesRelations = relations(communities, ({ one }) => ({
   user: one(users, { fields: [communities.userId], references: [users.id] }),
@@ -145,3 +148,34 @@ export const helpLogs = pgTable("help_logs", {
   source: text("source").notNull().default("ai"),
   createdAt: created(),
 }, (t) => [index("help_logs_created_idx").on(t.createdAt)]);
+
+export const tokenKindEnum = pgEnum("token_kind", ["VERIFY_EMAIL", "RESET_PASSWORD"]);
+
+/** Single-use links sent by email. Only a SHA-256 hash of the token is stored. */
+export const authTokens = pgTable("auth_tokens", {
+  id: id(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: tokenKindEnum("kind").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: created(),
+}, (t) => [index("auth_tokens_user_idx").on(t.userId, t.kind)]);
+
+/** Files (screenshots, PDFs) attached to a passport project, stored in Vercel Blob. */
+export const projectFiles = pgTable("project_files", {
+  id: id(),
+  projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  pathname: text("pathname").notNull().unique(),
+  name: text("name").notNull(),
+  contentType: text("content_type").notNull(),
+  size: integer("size").notNull(),
+  createdAt: created(),
+}, (t) => [index("project_files_project_idx").on(t.projectId)]);
+
+export const projectFilesRelations = relations(projectFiles, ({ one }) => ({
+  project: one(projects, { fields: [projectFiles.projectId], references: [projects.id] }),
+}));
+export type ProjectFile = typeof projectFiles.$inferSelect;

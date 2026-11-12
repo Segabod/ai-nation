@@ -62,7 +62,7 @@ export default async function Admin() {
           <thead><tr><th>Member</th><th>Joined</th><th>Role</th><th>Access</th></tr></thead>
           <tbody>{allUsers.map((u) => (
             <tr key={u.id}>
-              <td><b>{u.name}</b>{u.suspended && <span className="chip bad" style={{ marginLeft: 8 }}>Suspended</span>}<div className="dim" style={{ fontSize: 13 }}>{u.email}{u.organisation ? ` · ${u.organisation}` : ""}</div></td>
+              <td><b>{u.name}</b>{u.suspended && <span className="chip bad" style={{ marginLeft: 8 }}>Suspended</span>}{!u.emailVerifiedAt && u.role !== "ADMIN" && <span className="chip" style={{ marginLeft: 8 }}>Email unconfirmed</span>}<div className="dim" style={{ fontSize: 13 }}>{u.email}{u.organisation ? ` · ${u.organisation}` : ""}</div></td>
               <td>{fmt(u.createdAt)}</td>
               <td>{u.id === me.id ? <span className="chip orange">{ROLE_LABEL[u.role]} (you)</span> : (
                 <form action={adminSetRole} className="row"><input type="hidden" name="id" value={u.id} />

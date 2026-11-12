@@ -112,3 +112,9 @@ export const ROLE_LABEL: Record<Role, string> = {
   PARTNER: "Community partner",
   ADMIN: "Administrator",
 };
+
+/** Message to show when an unverified member tries something that reaches other people, or null if they may proceed. */
+export function verificationError(user: SafeUser) {
+  if (user.emailVerifiedAt || user.role === "ADMIN") return null;
+  return `Please confirm your email first. We sent a link to ${user.email}; you can resend it from your dashboard.`;
+}

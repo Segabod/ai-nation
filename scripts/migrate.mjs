@@ -22,8 +22,8 @@ try {
   if (email && password.length >= 10) {
     const hash = await bcrypt.hash(password, 12);
     const res = await sql`
-      insert into users (id, email, password_hash, name, role, organisation)
-      values (${randomUUID()}, ${email}, ${hash}, 'AI Nation Admin', 'ADMIN', 'AI Nation')
+      insert into users (id, email, password_hash, name, role, organisation, email_verified_at)
+      values (${randomUUID()}, ${email}, ${hash}, 'AI Nation Admin', 'ADMIN', 'AI Nation', now())
       on conflict (email) do nothing returning id`;
     console.log(res.length ? `[migrate] Created admin ${email}.` : `[migrate] Admin ${email} already exists, left unchanged.`);
   }
