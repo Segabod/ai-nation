@@ -1,226 +1,181 @@
-import Photo from "@/src/components/Photo";
 import Link from "next/link";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, briefs } from "@/src/db";
 import { getCurrentUser } from "@/src/lib/auth";
-import { BriefShowcase, Reveal, TypedSession } from "@/src/components/Landing";
 import { redirect } from "next/navigation";
 import { homeForRole } from "@/src/lib/audience";
 
 export const dynamic = "force-dynamic";
 
+// Paths travelled by the hero particles: builder -> Skills Passport -> organisation.
+const IN = [
+  "M70 100 C180 100 200 260 300 260",
+  "M50 210 C170 210 200 260 300 260",
+  "M80 320 C180 320 200 260 300 260",
+  "M55 430 C180 430 200 260 300 260",
+];
+const OUT = [
+  "M300 260 C400 260 420 130 530 130",
+  "M300 260 C400 260 430 260 548 260",
+  "M300 260 C400 260 420 390 530 390",
+];
+const BUILDERS: [number, number][] = [[70, 100], [50, 210], [80, 320], [55, 430]];
+const ORGS: [number, number][] = [[530, 130], [548, 260], [530, 390]];
+const TRIPS: { i: number; o: number; dur: string; begin: string; org?: boolean }[] = [
+  { i: 0, o: 0, dur: "4.2s", begin: "0s" },
+  { i: 1, o: 1, dur: "4.8s", begin: "-1.1s" },
+  { i: 2, o: 2, dur: "4.4s", begin: "-2s" },
+  { i: 3, o: 0, dur: "5s", begin: "-0.5s" },
+  { i: 3, o: 1, dur: "5.4s", begin: "-2.8s", org: true },
+];
+const SOURCES = ["Hackathons", "Universities", "Colleges", "Builder communities", "Incubators", "Employers"];
+
 export default async function Home({ searchParams }: { searchParams: Promise<{ choose?: string }> }) {
   const user = await getCurrentUser();
   // Signed-in members go straight to their own home; "/?choose=1" still shows this page.
   if (user && user.role !== "ADMIN" && !(await searchParams).choose) redirect(homeForRole(user.role));
-  const openBriefs = await db.query.briefs.findMany({
-    where: eq(briefs.status, "OPEN"), orderBy: desc(briefs.createdAt), limit: 3,
-    with: { owner: { columns: { organisation: true } } },
-  });
-
-  // Each audience has its own home page; choosing one is remembered for next time.
-  const builderHref = "/builders";
-  const orgHref = "/employers";
-  const partnerHref = "/partners";
+  const open = await db.$count(briefs, eq(briefs.status, "OPEN"));
 
   return (
-    <>
-      <Reveal />
+    <div className="hm">
       {/* HERO */}
-      <section className="hero" id="top">
-        <div className="glow" style={{ width: 420, height: 420, background: "#0b67c9", left: -120, top: -60 }} />
-        <div className="wrap hero-grid">
-          <div>
-            <p className="eyebrow o">Exceptional talent. A community of possibility.</p>
-            <h1>Great builders finding their next <span className="grad">big opportunity.</span></h1>
-            <p className="lede">Connecting university, college and hackathon talent with organisations ready to build something meaningful.</p>
-            <div className="aud-choose" role="group" aria-labelledby="aud-q">
-              <p id="aud-q" className="aud-q">Who are you? We’ll show you what matters to you.</p>
-              <div className="aud-opts">
-                <Link href={builderHref} className="aud-opt"><b>I’m a builder</b><span>Student, graduate or hackathon talent</span><i aria-hidden>↗</i></Link>
-                <Link href={orgHref} className="aud-opt o"><b>I need a team</b><span>Employer, startup or nonprofit</span><i aria-hidden>↗</i></Link>
-                <Link href={partnerHref} className="aud-opt"><b>I connect people</b><span>Campus, community or innovation hub</span><i aria-hidden>↗</i></Link>
-              </div>
+      <section className="hm-hero hm-dots" id="top">
+        <div className="wrap hm-hero-grid">
+          <div className="hm-copy">
+            <p className="eyebrow o hm-rise hm-d1">Campus talent · Real briefs</p>
+            <h1 className="hm-rise hm-d2">Where builders<br />become <span className="hm-accent">hires.</span></h1>
+            <p className="lede hm-rise hm-d3">
+              AI Nation turns what students and hackathon teams build into a Skills Passport, then routes them to paid
+              briefs from organisations that need the work done.
+            </p>
+            <div className="hm-ctas hm-rise hm-d4">
+              <Link href="/builders" className="btn btn-primary">I’m a builder <span className="ar">↗</span></Link>
+              <Link href="/employers" className="btn btn-ghost">I’m hiring</Link>
+              <Link href="/briefs" className="linkish">{open > 0 ? `${open} open brief${open === 1 ? "" : "s"} →` : "Browse briefs →"}</Link>
             </div>
           </div>
-          <div className="hero-media">
-            <Photo src="/lights.jpg" alt="Visitors in silhouette walking through a room of hanging lights" />
-            <div className="hero-badge">
-              <span className="chip">Discover · Develop · Connect</span>
-              <Link href="/briefs" className="chip blue">{openBriefs.length ? `${openBriefs.length}+ open briefs` : "Browse briefs"} ↗</Link>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* PILLARS */}
-      <section className="sec" style={{ paddingTop: 30 }}>
-        <div className="wrap reveal">
-          <p className="eyebrow">Discover. Develop. Connect.</p>
-          <div className="pillars" style={{ marginTop: 22 }}>
-            {[
-              ["01", "Show your work", "Projects that demonstrate your ability"],
-              ["02", "Build your skills", "Focused feedback and mentorship"],
-              ["03", "Find your fit", "A path toward paid opportunities"],
-            ].map(([n, h, p]) => (
-              <div className="pillar" key={n}><b>{n}</b><h3>{h}</h3><p className="muted">{p}</p></div>
-            ))}
-          </div>
-          <p className="statement">A hackathon prize or a great campus project should be a <em>beginning.</em> We’re creating a path from demonstrated potential to meaningful, paid work.</p>
-        </div>
-      </section>
-
-      {/* PATHS */}
-      <section className="sec" id="paths">
-        <div className="wrap">
-          <div className="sec-head reveal">
-            <div><p className="eyebrow">Choose your starting point</p><h2>Talent meets possibility.</h2></div>
-            <p>We connect people who can build with organisations ready to turn ambition into useful work.</p>
-          </div>
-          <div className="paths reveal">
-            <Link href={builderHref} className="path">
-              <span className="go" aria-hidden>↗</span>
-              <span className="ic" aria-hidden>⌘</span>
-              <h3>I’m a builder.</h3>
-              <span className="who">Students, graduates &amp; independent talent</span>
-              <p className="muted">Bring your work. Explore focused feedback, development and a path toward paid opportunity.</p>
-            </Link>
-            <Link href={orgHref} className="path o">
-              <span className="go" aria-hidden>↗</span>
-              <span className="ic" aria-hidden>↗</span>
-              <h3>I need a team.</h3>
-              <span className="who">Startups, businesses &amp; nonprofits</span>
-              <p className="muted">Explore assessed talent, embedded teams and managed projects around a defined business need.</p>
-            </Link>
-            <Link href={partnerHref} className="path">
-              <span className="go" aria-hidden>↗</span>
-              <span className="ic" aria-hidden>+</span>
-              <h3>I connect people.</h3>
-              <span className="who">Campuses, communities &amp; innovation hubs</span>
-              <p className="muted">Explore how your community’s talent could connect with practical projects and meaningful work.</p>
-            </Link>
-          </div>
-          <p className="statement reveal">Your best work deserves more than applause. <em>It deserves a next step.</em></p>
-        </div>
-      </section>
-
-      {/* BRIEFS */}
-      <section className="sec" id="work">
-        <div className="wrap">
-          <div className="sec-head reveal">
-            <div><p className="eyebrow o">The possibility journal / 01</p><h2>Useful work.<br />Worth building.</h2></div>
-            <p>What could a focused team make possible? Explore illustrative project briefs across everyday business challenges.</p>
-          </div>
-          <div className="reveal"><BriefShowcase /></div>
-
-          {openBriefs.length > 0 && (
-            <div className="reveal" style={{ marginTop: 40 }}>
-              <div className="between" style={{ marginBottom: 14 }}>
-                <h3 style={{ fontSize: 24 }}>Open briefs right now</h3>
-                <Link href="/briefs" className="linkish">See all briefs →</Link>
-              </div>
-              <div className="grid-3">
-                {openBriefs.map((b) => (
-                  <Link key={b.id} href={`/briefs/${b.id}`} className="item">
-                    <div className="row"><span className="chip blue">{b.sector}</span>{b.isSample && <span className="chip orange">Sample</span>}</div>
-                    <h3>{b.title}</h3>
-                    <p className="muted" style={{ fontSize: 14 }}>{b.owner.organisation ?? "AI Nation partner"} · {b.engagement}</p>
-                  </Link>
+          <div className="hm-visual hm-rise hm-d3">
+            <svg viewBox="0 0 600 520" role="img" aria-label="Builders flow through a Skills Passport to organisations">
+              <text x="40" y="36" className="hm-label">BUILDERS</text>
+              <text x="560" y="36" className="hm-label" textAnchor="end">ORGANISATIONS</text>
+              <g className="hm-line-b">{IN.map((d) => <path key={d} className="hm-flow" d={d} />)}</g>
+              <g className="hm-line-o">{OUT.map((d) => <path key={d} className="hm-flow" d={d} />)}</g>
+              <g className="hm-particles">
+                {TRIPS.map((t, k) => (
+                  <circle key={k} r={t.org ? 3 : 4} className={t.org ? "hm-fill-o" : "hm-fill-b"}>
+                    <animateMotion dur={t.dur} begin={t.begin} repeatCount="indefinite" path={`${IN[t.i]} ${OUT[t.o].slice(OUT[t.o].indexOf("C"))}`} />
+                  </circle>
                 ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* JOURNEY */}
-      <section className="sec" id="approach">
-        <div className="wrap journey">
-          <div className="journey-sticky reveal">
-            <p className="eyebrow">How the connection happens</p>
-            <h2 style={{ fontSize: "clamp(36px,4.6vw,60px)", margin: "12px 0 16px" }}>Good work<br />opens doors.</h2>
-            <p className="muted" style={{ maxWidth: 420 }}>A practical journey from what you’ve built to where you could go next.</p>
-            <Link href={builderHref} className="btn btn-primary" style={{ marginTop: 26 }}>Map my starting point <span className="ar">↗</span></Link>
-          </div>
-          <div className="steps">
-            {[
-              ["01", "Show us the work.", "A capstone, a hackathon build or an independent project. Your contribution matters more than the prize."],
-              ["02", "Go beyond the presentation.", "Walk through your thinking, technical choices and individual contribution. Build a clearer picture of your capability."],
-              ["03", "Develop your next strength.", "Use targeted feedback and practical mentorship to close gaps and prepare for the work you want to do."],
-              ["04", "Make the right connection.", "Explore suitable paid projects, team engagements or employment as funded opportunities become available."],
-            ].map(([n, h, p]) => (
-              <div className="step reveal" key={n}><b>{n}</b><div><h3>{h}</h3><p className="muted">{p}</p></div></div>
-            ))}
+              </g>
+              {BUILDERS.map(([x, y], k) => (
+                <g key={`b${k}`}>
+                  <circle className={`hm-pulse hm-p${k}`} cx={x} cy={y} r={7} />
+                  <circle className="hm-fill-b" cx={x} cy={y} r={7} />
+                </g>
+              ))}
+              {ORGS.map(([x, y], k) => <rect key={`o${k}`} className="hm-fill-o" x={x - 9} y={y - 9} width={18} height={18} rx={4} />)}
+              <circle className="hm-spin-r hm-ring-1" cx="300" cy="260" r="112" />
+              <circle className="hm-spin hm-ring-2" cx="300" cy="260" r="88" />
+              <g className="hm-float">
+                <rect className="hm-card" x="228" y="216" width="144" height="88" rx="12" />
+                <text x="244" y="240" className="hm-card-t">SKILLS PASSPORT</text>
+                {[[252, 72, "b"], [266, 54, "o"], [280, 84, "b"]].map(([y, w, c]) => (
+                  <g key={y}>
+                    <rect className="hm-track" x="244" y={y} width="112" height="6" rx="3" />
+                    <rect className={c === "b" ? "hm-fill-b" : "hm-fill-o"} x="244" y={y} width={w} height="6" rx="3" />
+                  </g>
+                ))}
+              </g>
+            </svg>
           </div>
         </div>
       </section>
 
-      {/* PASSPORT */}
-      <section className="sec" id="passport">
-        <div className="wrap passport reveal">
-          <div className="pp-copy">
-            <p className="eyebrow o">The Builder Skills Passport</p>
-            <h2>A résumé tells a story. Your work adds evidence.</h2>
-            <p className="muted">Project context. Individual contributions. Reviewed feedback. A record that helps people understand what you can bring to a team.</p>
-            <p style={{ marginTop: 16, fontFamily: "var(--display)" }}>Voice or text. Human review. Room to grow.</p>
-            <Link href={builderHref} className="btn btn-light" style={{ marginTop: 26 }}>
-              Start my passport <span className="ar">↗</span>
-            </Link>
-          </div>
-          <TypedSession />
+      {/* TALENT SOURCES */}
+      <div className="hm-marquee" aria-label={SOURCES.join(", ")}>
+        <div className="hm-track-x" aria-hidden>
+          {[0, 1].flatMap((r) => SOURCES.map((s) => <span key={r + s}>{s}</span>))}
         </div>
-      </section>
+      </div>
 
-      {/* OPEN HOUSE */}
-      <section className="sec" id="open-house">
+      {/* BUILD. PROVE. GET PAID. */}
+      <section className="sec" id="how">
         <div className="wrap">
-          <div className="openhouse reveal">
-            <Photo src="/event.jpg" alt="A builder in an AI shirt talking with a student at a busy campus showcase" />
-            <div className="oh-top"><span>AI NATION PRESENTS</span><span>CONCEPT EDITION</span></div>
-            <div className="oh-in">
-              <div>
-                <p className="eyebrow o">An open floor for possibility</p>
-                <h2>Open<br /><span>house.</span></h2>
+          <h2 className="hm-h2">Build. Prove. <span className="hm-accent">Get paid.</span></h2>
+          <div className="hm-steps">
+            <div className="hm-step">
+              <div className="hm-anim hm-code" aria-hidden>
+                <i className="hm-type hm-fill-b" style={{ ["--w" as string]: "78%" }} />
+                <i className="hm-type hm-soft" style={{ ["--w" as string]: "54%", animationDelay: ".3s" }} />
+                <i className="hm-type hm-soft" style={{ ["--w" as string]: "66%", animationDelay: ".6s" }} />
+                <span><i className="hm-type hm-fill-o" style={{ ["--w" as string]: "40%", animationDelay: ".9s" }} /><b className="hm-caret">▍</b></span>
               </div>
-              <div>
-                <p style={{ fontFamily: "var(--display)", fontSize: 22 }}>Come for the work. Stay for the people.</p>
-                <ul className="oh-list"><li>Live demonstrations.</li><li>The people behind the work.</li><li>The conversation that comes next.</li></ul>
-                <p className="muted" style={{ marginTop: 14 }}>A proposed showcase where builders demonstrate working projects and meet employers, founders and potential clients.</p>
-                <Link href="/open-house#register" className="btn btn-primary" style={{ marginTop: 20 }}>Plan my participation <span className="ar">↗</span></Link>
-                <p className="dim" style={{ fontSize: 13, marginTop: 10 }}>Programme in development. No event date confirmed.</p>
+              <span className="hm-num">01</span>
+              <h3>Build</h3>
+              <p className="muted">Ship something real at a hackathon, in class or on your own.</p>
+            </div>
+            <div className="hm-step">
+              <div className="hm-anim hm-center" aria-hidden>
+                <svg width="96" height="96" viewBox="0 0 96 96">
+                  <circle className="hm-spin hm-ring-2" cx="48" cy="48" r="42" strokeDasharray="14 8" />
+                  <circle className="hm-card" cx="48" cy="48" r="30" />
+                  <path className="hm-draw" d="M36 49 L45 58 L61 40" />
+                </svg>
               </div>
+              <span className="hm-num">02</span>
+              <h3>Prove</h3>
+              <p className="muted">Your build becomes a Skills Passport that shows what you can actually do.</p>
+            </div>
+            <div className="hm-step">
+              <div className="hm-anim hm-brief" aria-hidden>
+                <div className="between"><span className="hm-mono">BRIEF</span><span className="hm-paid">PAID</span></div>
+                <div className="hm-bar"><i className="hm-grow" /></div>
+                <i className="hm-soft" style={{ width: "60%", height: 8 }} />
+              </div>
+              <span className="hm-num">03</span>
+              <h3>Get paid</h3>
+              <p className="muted">Organisations post briefs. Passport holders take them on and get paid.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ECOSYSTEM */}
-      <section className="sec" id="ecosystem" style={{ paddingBottom: 30 }}>
-        <div className="wrap sec-head reveal">
-          <div><p className="eyebrow">Built through connection</p><h2>One ecosystem, many ways in.</h2></div>
-          <p>We’re developing a model that connects campus talent, builder communities and organisations with funded needs.</p>
-        </div>
-        <div className="marquee" aria-label="Universities and colleges, hackathon communities, innovation hubs, employers and founders">
-          <div className="marquee-track" aria-hidden>
-            {[0, 1].flatMap((r) => ["Universities & colleges", "Hackathon communities", "Innovation hubs", "Employers & founders"].map((t) => <span key={r + t}>{t}</span>))}
-          </div>
-        </div>
+      {/* AUDIENCES */}
+      <section className="wrap hm-aud" aria-label="Choose your starting point">
+        <Link href="/builders">
+          <span className="eyebrow o">For builders</span>
+          <b>Turn your demo into a door.</b>
+          <span className="muted">Get your passport →</span>
+        </Link>
+        <Link href="/employers">
+          <span className="eyebrow">For employers</span>
+          <b>Hire from proof, not promises.</b>
+          <span className="muted">Post a brief →</span>
+        </Link>
+        <Link href="/partners">
+          <span className="eyebrow" style={{ color: "var(--ink)" }}>For partners</span>
+          <b>Give your best builders a next step after the demo.</b>
+          <span className="muted">Run a challenge track →</span>
+        </Link>
       </section>
 
       {/* CLOSING */}
-      <section className="closing" id="closing">
-        <div className="wrap reveal">
-          <p className="eyebrow o">Let’s talk</p>
-          <h2>Your next chapter starts with a conversation.</h2>
-          <p className="muted" style={{ fontSize: 19 }}>Bring your talent. Bring your challenge. Let’s find the right starting point.</p>
+      <section className="closing hm-dots" id="join">
+        <div className="wrap">
+          <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden style={{ margin: "0 auto" }}>
+            <circle className="hm-pulse hm-p0" cx="32" cy="32" r="10" />
+            <circle className="hm-pulse hm-p2" cx="32" cy="32" r="10" />
+            <circle className="hm-fill-b" cx="32" cy="32" r="10" />
+          </svg>
+          <h2>Your next build could be <span className="hm-accent">someone’s next hire.</span></h2>
           <div className="row">
-            <Link href={builderHref} className="btn btn-primary">I’m ready to build <span className="ar">↗</span></Link>
-            <Link href={orgHref} className="btn btn-ghost">I’m looking for talent <span aria-hidden>→</span></Link>
-            <Link href={partnerHref} className="btn btn-ghost">Partner with us</Link>
+            <Link href="/signup" className="btn btn-primary">Join as a builder <span className="ar">↗</span></Link>
+            <Link href="/employers" className="btn btn-ghost">Hire through AI Nation</Link>
             <Link href="/contact" className="btn btn-ghost">Send us a message</Link>
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
