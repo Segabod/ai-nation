@@ -2,11 +2,14 @@
 import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import type { FormState } from "@/src/lib/forms";
+import ComboInput from "@/src/components/ComboInput";
 
 export type Field = {
   name: string;
   label?: string;
-  type?: "text" | "email" | "password" | "url" | "textarea" | "select" | "checkbox" | "hidden" | "roles";
+  type?: "text" | "email" | "password" | "url" | "textarea" | "select" | "checkbox" | "hidden" | "roles" | "combo";
+  /** For type "combo": suggestions shown as the person types; any value is still accepted. */
+  suggestions?: string[];
   options?: { value: string; label: string; hint?: string }[];
   placeholder?: string;
   required?: boolean;
@@ -61,6 +64,8 @@ export default function SmartForm({ action, fields, submit, variant = "primary",
             {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>,
         );
+      case "combo":
+        return wrap(f, id, <ComboInput key={k} id={id} name={f.name} options={f.suggestions ?? []} defaultValue={val(f)} required={f.required} placeholder={f.placeholder} maxLength={f.maxLength} />);
       case "checkbox":
         return (
           <label key={f.name} className="check">

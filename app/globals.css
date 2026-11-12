@@ -506,3 +506,12 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14.5px}
 .evidence-up{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .evidence-up .notice{flex-basis:100%}
 @media (prefers-reduced-motion:reduce){.evidence-thumbs img{transition:none}}
+
+/* ---- type-ahead text box ---- */
+.combo{position:relative}
+.combo-list{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 6px);margin:0;padding:6px;list-style:none;background:var(--panel);border:1px solid var(--line-2);border-radius:14px;box-shadow:0 18px 40px var(--shadow-deep,rgba(0,0,0,.35));max-height:300px;overflow:auto}
+.combo-list li{padding:9px 12px;border-radius:9px;cursor:pointer;font-size:14.5px;color:var(--muted)}
+.combo-list li b{color:var(--ink);font-weight:600}
+.combo-list li.on{background:var(--panel-2);color:var(--ink)}
+.combo-list li.on b{color:var(--orange)}
+.combo-list .combo-hint{cursor:default;font-size:12.5px;color:var(--dim);border-top:1px solid var(--line);border-radius:0;margin-top:4px;padding-top:8px}

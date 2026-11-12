@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import { db, projects, projectFiles } from "@/src/db";
+import { db, projects, projectFiles, communities } from "@/src/db";
+import { SCHOOLS } from "@/src/lib/schools";
 import { asc } from "drizzle-orm";
 import EvidenceFiles from "@/src/components/EvidenceFiles";
 import EvidenceUploader from "@/src/components/EvidenceUploader";
@@ -17,6 +18,9 @@ export default async function Passport({ searchParams }: { searchParams: Promise
   const { welcome } = await searchParams;
   const isBuilder = user.role === "BUILDER";
   const projs = isBuilder ? await db.query.projects.findMany({ where: eq(projects.userId, user.id), orderBy: desc(projects.createdAt), with: { files: { orderBy: asc(projectFiles.createdAt) } } }) : [];
+  // registered community partners first, then the built-in list
+  const partners = isBuilder ? await db.select({ name: communities.name }).from(communities) : [];
+  const schoolOptions = Array.from(new Set([...partners.map((c) => c.name.trim()), ...SCHOOLS])).filter(Boolean);
   const canUpload = uploadsEnabled() && Boolean(user.emailVerifiedAt);
 
   return (
@@ -41,7 +45,7 @@ export default async function Passport({ searchParams }: { searchParams: Promise
             fields={[
               { name: "name", label: "Full name", required: true, defaultValue: user.name },
               { name: "headline", label: "Headline", required: isBuilder, maxLength: 140, defaultValue: user.headline ?? "", placeholder: isBuilder ? "e.g. Final-year CS student building retrieval tools" : "e.g. Head of Operations" },
-              ...(isBuilder ? [{ name: "organisation", label: "School or community", required: true, defaultValue: user.organisation ?? "", help: "Links you to your campus or community partner." }] : []),
+              ...(isBuilder ? [{ name: "organisation", type: "combo" as const, suggestions: schoolOptions, label: "School or community", required: true, maxLength: 140, defaultValue: user.organisation ?? "", placeholder: "Start typing, e.g. Toronto Metropolitan University", help: "Pick from the list or type your own. Links you to your campus or community partner." }] : []),
               { name: "location", label: "Location", required: isBuilder, defaultValue: user.location ?? "" },
               { name: "bio", type: "textarea" as const, label: "Short bio", required: isBuilder, maxLength: 1500, defaultValue: user.bio ?? "" },
               ...(isBuilder ? [
